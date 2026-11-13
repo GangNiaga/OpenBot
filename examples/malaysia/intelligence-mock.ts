@@ -16,7 +16,7 @@
  * demo: durable history across restarts is a platform concern this stand-in
  * does not carry.
  */
-const PORT = 19099;
+const PORT = Number.parseInt(process.env.INTELLIGENCE_MOCK_PORT ?? "19099", 10);
 
 type Message = { id: string; role: string; [key: string]: unknown };
 type AgUiEvent = Record<string, unknown>;
