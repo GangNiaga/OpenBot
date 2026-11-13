@@ -152,6 +152,30 @@ export function addressOf(
    * become the `tls` option below.
    */
   const tls = tlsOf(url.searchParams, bunVersion);
+
+  /*
+   * `max` is the pool's size in the driver that reads it, not a Postgres parameter.
+   *
+   * Two drivers share this one address: Bun SQL for the server's own pool (where `max` is an option,
+   * default ten), and postgres-js for the single-connection listeners and one-shot jobs (where it is
+   * also an option). Forwarded as a connection parameter neither would send it, but a managed
+   * pooler would read it as a startup parameter and refuse it, so it is taken out of the query
+   * string here and turned into the option every caller already passes through the spread. This is
+   * the knob that keeps one deployment inside what a pooled host allows: a session pooler admits a
+   * fixed number of clients, and the listeners each hold one for the life of their subscription.
+   */
+  const rawMax = url.searchParams.get("max");
+  url.searchParams.delete("max");
+  let max: number | undefined = undefined;
+  if (rawMax !== null) {
+    max = Number(rawMax);
+    if (!Number.isInteger(max) || max < 1 || max > 10000) {
+      throw new TypeError(
+        `DATABASE_URL has a max of "${rawMax}", which is not a whole number between 1 and 10000.`,
+      );
+    }
+  }
+
   const connection = Object.fromEntries(
     [...url.searchParams].filter(
       ([name]) => name !== "sslmode" && name !== "sslrootcert",
@@ -184,6 +208,7 @@ export function addressOf(
     password: decodePart(url.password, "password"),
     database,
     ...(Object.keys(connection).length > 0 ? { connection } : {}),
+    ...(max === undefined ? {} : { max }),
     ...tls,
   };
 }
