@@ -544,7 +544,32 @@ export const CATALOGUE: readonly CatalogueEntry[] = Object.freeze([
     path: "/mcp",
     auth: { kind: "none" },
     writeTools: Object.freeze([]),
-    docsUrl: "https://github.com/CopilotKit/OpenBot/blob/main/examples/malaysia/mcp/README.md",
+    docsUrl:
+      "https://github.com/CopilotKit/OpenBot/blob/main/examples/malaysia/mcp/README.md",
+  },
+  {
+    // The malaysia tenant package's long-term memory server, beside its data server above.
+    // First-party in the same literal sense: this deployment's own process
+    // (examples/malaysia/memori/server.ts), on a pinned loopback host with no credential to
+    // hold, storing into the deployment's own database (pgvector table memori_malaysia) over
+    // the same DATABASE_URL the server itself uses - nothing outside the deployment's trust
+    // boundary is written to or read from. simpan_memori and lupa_memori change state and are
+    // named as writes; cari_memori and bilang_memori only read.
+    key: "memori",
+    title: "Memori Jangka Panjang",
+    vendor: "OpenBot (tempatan)",
+    summary:
+      "Memori jangka panjang deployment ini di pgvector: simpan fakta, keutamaan dan peristiwa " +
+      "tentang pengguna, cari semula dengan carian makna merentas thread, lupa yang salah, dan " +
+      "bilang simpanan. Embedding NVIDIA (fallback hash tempatan), jadual memori_malaysia di Supabase.",
+    personalSummary:
+      "Memori jangka panjang anda: fakta dan keutamaan disimpan, dicari semula dengan carian makna.",
+    host: "http://127.0.0.1:4211",
+    path: "/mcp",
+    auth: { kind: "none" },
+    writeTools: Object.freeze(["simpan_memori", "lupa_memori"]),
+    docsUrl:
+      "https://github.com/CopilotKit/OpenBot/blob/main/examples/malaysia/memori/server.ts",
   },
 ]);
 

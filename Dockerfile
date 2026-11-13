@@ -207,13 +207,19 @@ COPY scripts/start-cloud.sh scripts/start-cloud.sh
 # which is how the example died at boot on Render. Each store entry carries the package's own
 # dependencies, so one symlink per import at the root is enough; the SDK's own links are read for
 # express and zod so the example and the SDK resolve the same build of each.
+# The memori example (`examples/malaysia/memori/server.ts`) adds `postgres` to that set: it is a
+# server dependency, so the pruned install keeps it under `server/node_modules` too.
 RUN sdkNodeModules="$(ls -d node_modules/.bun/@modelcontextprotocol+sdk@*/node_modules)" \
   && expressRel="$(readlink "${sdkNodeModules}/express")" \
   && zodRel="$(readlink "${sdkNodeModules}/zod")" \
   && mkdir -p node_modules/@modelcontextprotocol \
   && ln -sfn ".bun/${expressRel#../../}" node_modules/express \
   && ln -sfn ".bun/${zodRel#../../}" node_modules/zod \
-  && ln -sfn "../.bun/$(basename "$(dirname "${sdkNodeModules}")")/node_modules/@modelcontextprotocol/sdk" node_modules/@modelcontextprotocol/sdk
+  && ln -sfn "../.bun/$(basename "$(dirname "${sdkNodeModules}")")/node_modules/@modelcontextprotocol/sdk" node_modules/@modelcontextprotocol/sdk \
+  && if [ ! -e node_modules/postgres ] && [ -e server/node_modules/postgres ]; then \
+       postgresRel="$(readlink server/node_modules/postgres)" \
+       && ln -sfn "${postgresRel#../../node_modules/}" node_modules/postgres; \
+     fi
 
 # The built app, served by the API on the same origin. There is no CORS in this server, so this is
 # not a convenience: two origins would simply fail.
