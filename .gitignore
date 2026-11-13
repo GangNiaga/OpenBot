@@ -57,3 +57,5 @@ venv/
 
 # The Recorder extension's signing key never enters the repository (Decision 9).
 extension/**/*.pem
+.env*
+.vercel
