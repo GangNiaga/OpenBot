@@ -20,4 +20,4 @@ rules:
   # weight for every other consumer.
   adhoc-packages:
     ignore:
-      - .github/workflows/vercel-deploy.yml
+      - vercel-deploy.yml
