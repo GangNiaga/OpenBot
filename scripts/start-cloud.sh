@@ -7,6 +7,9 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
+echo "[cloud] migrasi database (Supabase)..."
+(cd server && bun scripts/migrate.ts) || { echo "[cloud] migrasi gagal - deploy dihenti"; exit 1; }
+
 echo "[cloud] mula pelayan MCP Malaysia di 4210..."
 bun examples/malaysia/mcp/server.ts &
 
