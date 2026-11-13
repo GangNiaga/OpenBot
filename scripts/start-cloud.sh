@@ -12,8 +12,20 @@ cd "$(dirname "$0")/.."
 # belakang (&) milik but sebelumnya tidak mati bersama PID 1. Mereka pegang 4210/19099/10000 dan
 # but baharu mati dengan EADDRINUSE. Bunuh sebelum apa-apa dimulakan, supaya setiap but mengikat
 # dengan bersih.
+#
+# `pkill` tiada dalam imej (procps tidak dipasang), jadi imbas /proc terus: baca cmdline setiap
+# proses, padankan corak, bunuh PID-nya. Corak tidak akan padankan skrip ini sendiri
+# (/bin/bash scripts/start-cloud.sh) atau ibu bapanya.
 for pattern in "examples/malaysia/mcp/server.ts" "examples/malaysia/intelligence-mock.ts" "src/index.ts"; do
-  command -v pkill >/dev/null 2>&1 && pkill -f "$pattern" 2>/dev/null || true
+  for proc in /proc/[0-9]*/cmdline; do
+    if tr '\0' ' ' < "$proc" 2>/dev/null | grep -qF "$pattern"; then
+      pid="${proc#/proc/}"
+      pid="${pid%/cmdline}"
+      if [ "$pid" != "$$" ] && [ "$pid" != "$PPID" ]; then
+        kill "$pid" 2>/dev/null || true
+      fi
+    fi
+  done
 done
 sleep 1
 
