@@ -200,6 +200,21 @@ COPY scripts/composio-smoke.ts scripts/composio-smoke.ts
 # Intelligence and the API itself (Render). The rest of `scripts/` stays the laptop's.
 COPY scripts/start-cloud.sh scripts/start-cloud.sh
 
+# THE MALAYSIA MCP EXAMPLE'S IMPORTS, at the root. `examples/malaysia/mcp/server.ts` imports the
+# MCP SDK, express and zod, and the pruned production install only puts those where a manifest
+# declares them: the SDK under `server/node_modules`, express and zod inside the SDK's own store
+# entry. Module resolution walks up from `examples/malaysia/mcp` to the root and finds nothing,
+# which is how the example died at boot on Render. Each store entry carries the package's own
+# dependencies, so one symlink per import at the root is enough; the SDK's own links are read for
+# express and zod so the example and the SDK resolve the same build of each.
+RUN sdkNodeModules="$(ls -d node_modules/.bun/@modelcontextprotocol+sdk@*/node_modules)" \
+  && expressRel="$(readlink "${sdkNodeModules}/express")" \
+  && zodRel="$(readlink "${sdkNodeModules}/zod")" \
+  && mkdir -p node_modules/@modelcontextprotocol \
+  && ln -sfn ".bun/${expressRel#../../}" node_modules/express \
+  && ln -sfn ".bun/${zodRel#../../}" node_modules/zod \
+  && ln -sfn "../.bun/$(basename "$(dirname "${sdkNodeModules}")")/node_modules/@modelcontextprotocol/sdk" node_modules/@modelcontextprotocol/sdk
+
 # The built app, served by the API on the same origin. There is no CORS in this server, so this is
 # not a convenience: two origins would simply fail.
 COPY --from=app-build /src/app/dist app/dist

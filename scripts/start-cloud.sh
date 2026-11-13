@@ -28,4 +28,8 @@ bun examples/malaysia/intelligence-mock.ts &
 ) &
 
 echo "[cloud] mula pelayan OpenBot di ${PORT:-3001}..."
-exec bun server/src/index.ts
+# Dari direktori `server`, bukan akar repo: TENANT_PACKAGE_DIR (`../examples/malaysia`) dan
+# lalaiannya (`../examples/fintech`) adalah laluan relatif kepada `server/`, sama seperti cara
+# migrasi di atas dijalankan. Jika tidak, tenant package dibaca dari luar repo dan boot mati.
+cd server
+exec bun src/index.ts
