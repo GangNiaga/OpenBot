@@ -523,6 +523,29 @@ export const CATALOGUE: readonly CatalogueEntry[] = Object.freeze([
     ]),
     docsUrl: "https://github.com/CopilotKit/OpenBot/blob/main/docs/routines.md",
   },
+  {
+    // The malaysia tenant package's own data server. First-party in the literal sense: it is
+    // this deployment's own process (examples/malaysia/mcp/README.md documents the source),
+    // on a pinned loopback host with no credential to hold, serving read-only reference
+    // data for Malaysian organisational charts. Every tool is a read; writeTools is empty
+    // and the server publishes readOnlyHint on every tool, so classifyTool treats the whole
+    // surface as reads.
+    key: "malaysia",
+    title: "Data & Organisasi Malaysia",
+    vendor: "OpenBot (tempatan)",
+    summary:
+      "Pelayan data tempatan deployment ini: struktur kerajaan persekutuan dan negeri " +
+      "Malaysia, kementerian, gred perkhidmatan awam, templat carta organisasi syarikat, " +
+      "set data terbuka data.gov.my, serta kit alat kerja (analisis teks BM, carta Mermaid, " +
+      "minit mesyuarat, kalendar cuti, glosari dwibahasa).",
+    personalSummary:
+      "Pelayan data tempatan anda: struktur organisasi Malaysia dan kit alat kerja BM.",
+    host: "http://127.0.0.1:4210",
+    path: "/mcp",
+    auth: { kind: "none" },
+    writeTools: Object.freeze([]),
+    docsUrl: "https://github.com/CopilotKit/OpenBot/blob/main/examples/malaysia/mcp/README.md",
+  },
 ]);
 
 const BY_KEY = new Map(CATALOGUE.map((entry) => [entry.key, entry]));

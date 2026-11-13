@@ -1,0 +1,62 @@
+# Saluran yang pakej ini sediakan. Setiap saluran mengehadkan Bot mana boleh menjawab di
+# dalamnya, supaya kerja organisasi Malaysia dan kerja am tidak bercampur — dan supaya
+# struktur carta organisasi pasukan (lihat WAR-ROOM.md) tergambar dalam cara kerja.
+channels:
+  - id: organisasi-malaysia
+    name: Organisasi Malaysia
+    description: >-
+      Carta organisasi kerajaan persekutuan, negeri, kementerian, agensi dan GLC Malaysia.
+    permitted_agents: [pegawai-organisasi, perunding-organisasi, penganalisis-data]
+    allowed_groups: [all]
+  - id: reka-bentuk-syarikat
+    name: Rekabentuk Syarikat
+    description: >-
+      Rekabentuk carta organisasi syarikat Malaysia: Sdn Bhd, Berhad, GLC, SME, koperasi —
+      dengan sokongan pematuhan.
+    permitted_agents: [perunding-organisasi, penasihat-pematuhan]
+    allowed_groups: [all]
+  - id: bilik-perang
+    name: Bilik Perang
+    description: >-
+      Taklimat strategik dan keputusan lintas jabatan: eksekutif, teknologi, kewangan,
+      operasi, pemasaran dan data dalam satu ruang.
+    permitted_agents: [pengarah-urusan, pegawai-teknologi, pegawai-kewangan, pegawai-operasi, pegawai-pemasaran, penganalisis-data]
+    allowed_groups: [all]
+  - id: kewangan-pematuhan
+    name: Kewangan & Pematuhan
+    description: >-
+      Bajet, anggaran kos RM, kerangka pematuhan dan tata kelola.
+    permitted_agents: [pegawai-kewangan, penasihat-pematuhan]
+    allowed_groups: [all]
+  - id: kandungan-komunikasi
+    name: Kandungan & Komunikasi
+    description: >-
+      Penulisan BM korporat, terjemahan rasmi BM <-> EN dan salinan kempen.
+    permitted_agents: [pereka-kandungan, penterjemah-rasmi, pegawai-pemasaran]
+    allowed_groups: [all]
+  - id: pembantu-am
+    name: Pembantu Am
+    description: Pertolongan harian dalam Bahasa Melayu.
+    permitted_agents: [pembantu-malaysia]
+    allowed_groups: [all]
+  - id: fnb-eksekutif
+    name: F&B Eksekutif
+    description: >-
+      Pusat arahan pasukan F&B: penilaian senario, P&L, kos menu, operasi harian dan
+      keputusan pengembangan (data DOSM disahkan).
+    permitted_agents: [pengarah-fnb, chef-eksekutif, pengurus-operasi-fnb, pegawai-kewangan]
+    allowed_groups: [all]
+  - id: fnb-pemasaran
+    name: F&B Pemasaran
+    description: >-
+      Mesin pemasaran jenama F&B: prospek B2B, video AI & karusel, kandungan BM dan jangkauan
+      emel - funnel tempatan Malaysia.
+    permitted_agents: [ejen-prospek, ejen-pemasaran-ai, ejen-kandungan, ejen-emel, pegawai-pemasaran]
+    allowed_groups: [all]
+  - id: fnb-khidmat-pelanggan
+    name: F&B Khidmat Pelanggan
+    description: >-
+      Pelanggan dan CRM: skrip panggilan, balasan ulasan, pipeline WhatsApp-first dan
+      automasi aliran kerja.
+    permitted_agents: [ejen-suara, ejen-crm, pembantu-malaysia]
+    allowed_groups: [all]

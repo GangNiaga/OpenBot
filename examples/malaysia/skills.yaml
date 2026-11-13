@@ -1,0 +1,301 @@
+# Kemahiran yang dihantar deployment ini, dan alat yang setiap satu perlukan.
+#
+# Kemahiran ialah arahan ber nama yang sesiapa boleh panggil dengan `/`. Ia tidak menambah
+# keupayaan: ia hanya meminta Bot menggunakan apa yang Bot itu sudah diberikan, dan setiap
+# panggilan tetap diputuskan, disemak dasar dan direkodkan.
+#
+# NAMA ALAT DI SINI TIDAK MENGIZINKAN SESIAPA. Apa yang Bot boleh panggil ialah gerannya
+# (grants), dan tawaran sentiasa disilangkan dengannya.
+#
+# Refs ialah `<serverId>/<namaAlat>`. `malaysia` ialah pelayan MCP tempatan deployment ini
+# (Data & Organisasi Malaysia, port 4210, entri katalog first-party) yang ditambah pentadbir
+# melalui POST /api/plugins/servers {"key": "malaysia"}, dan geran alat diberikan melalui
+# POST /api/plugins/grants (contoh: examples/malaysia/bootstrap.ts).
+#
+# Padanan standard SKILL.md terbuka (agentskills.io): setiap kemahiran di sini ada padanannya
+# dalam examples/malaysia/war-pack/skills/<slug>/SKILL.md untuk import ke mana-mana ejen yang
+# mematuhi standard terbuka.
+skills:
+  # ============================ ASAS ORGANISASI ============================
+
+  - slug: carta-organisasi
+    title: Lukis carta organisasi
+    summary: >-
+      Dapatkan struktur organisasi Malaysia yang sah dari pelayan MCP malaysia dan lukis
+      carta Mermaid yang kemas.
+    instructions: >-
+      Gunakan alat pelayan MCP "malaysia" yang anda pegang untuk mendapatkan data struktur
+      yang tepat sebelum melukis. Untuk kerajaan persekutuan, mulakan dari
+      carta_organisasi_persekutuan dan senarai_kementerian; untuk negeri, gunakan
+      senarai_negeri; untuk syarikat, mulakan dari struktur_organisasi_templat dan suai
+      mengikut keperluan. Keluarkan carta sebagai blok ```mermaid flowchart TD``` dengan
+      jawatan dalam Bahasa Melayu, kemudian terangkan setiap lapisan dengan ringkas. Jika
+      alat gagal atau tiada alat, katakan dengan jujur dan lukis templat umum dengan tanda
+      jelas bahawa ia perlu disahkan. Jangan sekali-kali mereka nama individu.
+    tools:
+      - malaysia/carta_organisasi_persekutuan
+      - malaysia/senarai_kementerian
+      - malaysia/senarai_negeri
+      - malaysia/struktur_organisasi_templat
+      - malaysia/gred_perkhidmatan
+
+  - slug: data-malaysia
+    title: Data rasmi Malaysia
+    summary: >-
+      Cari dan baca data kerajaan Malaysia - senarai kementerian, negeri, dan set data
+      terbuka data.gov.my.
+    instructions: >-
+      Gunakan alat pelayan MCP "malaysia" untuk data rasmi Malaysia. Untuk senarai
+      kementerian atau negeri, gunakan alat senarai statik yang sedia; untuk statistik dan
+      set data, cuba carian_dataset dan ambil_dataset (data.gov.my) dahulu, dan jika
+      perkhidmatan itu tidak dapat dihubungi, katakan ia tidak tersedia sekarang dan tawarkan
+      alternatif - jangan sesekali mereka angka statistik. Nyatakan sumber setiap data yang
+      anda beri, dan nyatakan tarikh data bila alat itu memberikannya.
+    tools:
+      - malaysia/senarai_kementerian
+      - malaysia/senarai_negeri
+      - malaysia/gred_perkhidmatan
+      - malaysia/carian_dataset
+      - malaysia/ambil_dataset
+
+  # ============================ KIT PERANG (BARU) ============================
+
+  - slug: bilik-perang
+    title: Taklimat Bilik Perang
+    summary: >-
+      Taklimat strategik lengkap: gabungkan konteks institusi, data rasmi dan analisis
+      menjadi laporan keadaan yang boleh bertindak.
+    instructions: >-
+      Sediakan taklimat strategik mengikut struktur tetap: (1) Keadaan Semasa - apa yang
+      berlaku dan siapa terlibat; (2) Isu Utama - 3 isu teratas dengan kesannya; (3) Pilihan
+      Tindakan - sekurang-kurangnya 2 pilihan dengan kesan dan risiko setiap satu; (4)
+      Cadangan - pilihan yang disyorkan dan sebabnya; (5) Perkara Tidak Disahkan. Gunakan
+      alat pelayan MCP "malaysia": carta_organisasi_persekutuan untuk konteks institusi bila
+      perkara menyentuh kerajaan atau pematuhan, carian_dataset untuk angka rasmi (jika tiada,
+      tanda jelas "perlu disahkan" - jangan mereka angka), analisis_teks_bm untuk meringkaskan
+      dokumen panjang yang diberi, dan glosari_kerajaan untuk istilah rasmi yang konsisten.
+      Akhiri dengan SENARAI TINDAKAN: siapa (jabatan/Bot mana), buat apa, bila.
+    tools:
+      - malaysia/carta_organisasi_persekutuan
+      - malaysia/carian_dataset
+      - malaysia/analisis_teks_bm
+      - malaysia/glosari_kerajaan
+
+  - slug: ringkasan-mesyuarat
+    title: Minit mesyuarat rasmi
+    summary: >-
+      Sediakan minit mesyuarat gaya rasmi Malaysia dengan jadual tindakan (siapa, apa, bila).
+    instructions: >-
+      Gunakan alat templat_minit_mesyuarat dari pelayan MCP "malaysia" sebagai kerangka,
+      kemudian isikan dengan apa yang berlaku. Untuk setiap perkara: keputusan yang dibuat,
+      bukan perbincangan panjang; untuk setiap tindakan: pegawai bertanggungjawab yang
+      JELAS (nama atau jawatan), tarikh akhir sebenar (guna kalendar_cuti untuk elak tarikh
+      akhir jatuh pada hari kelepasan am - hanya cuti tetap DISAHKAN), dan status. Selepas
+      menulis, jalankan analisis_teks_bm pada minit anda dan kekal ringkas (sasaran: paling
+      lambat 1 halaman untuk mesyuarat biasa). Keluarkan minit dalam format markdown yang
+      boleh disalin terus. Jika butiran tiada (nama hadirin, tarikh), biar pemegang tempat
+      yang jelas - jangan reka nama.
+    tools:
+      - malaysia/templat_minit_mesyuarat
+      - malaysia/analisis_teks_bm
+      - malaysia/kalendar_cuti
+
+  - slug: terjemah-rasmi
+    title: Terjemahan rasmi BM <-> EN
+    summary: >-
+      Terjemah dokumen BM <-> Inggeris dengan istilah rasmi Malaysia yang dikunci dari
+      glosari.
+    instructions: >-
+      Terjemahan dua hala Bahasa Melayu <-> Inggeris dengan kualiti dokumen rasmi. Dulu:
+      gunakan glosari_kerajaan dari pelayan MCP "malaysia" untuk mengunci istilah rasmi
+      (gelaran, akta, nama entiti) - kekalkan nama rasmi tanpa menterjemah semula (contoh:
+      "Akta Syarikat 2016" kekal; "Sdn Bhd" kekal). Kemudian: keluarkan terjemahan penuh
+      dengan struktur dokumen asal dikekalkan (senarai, jadual, tajuk), diikuti 3-5 nota
+      penterjemah tentang pilihan istilah yang samar sahaja. Jangan tambah atau buang
+      maklumat; kekalkan nada (rasmi/mesra). Bila pengguna ada had panjang, semak dengan
+      analisis_teks_bm dan tawarkan versi ringkas. Jika istilah tiada dalam glosari, pilih
+      padanan paling biasa dan nyatakan pilihan itu dalam nota.
+    tools:
+      - malaysia/glosari_kerajaan
+      - malaysia/analisis_teks_bm
+
+  - slug: analisis-data
+    title: Analisis set data Malaysia
+    summary: >-
+      Cari, baca dan analisis set data terbuka Malaysia dengan peraturan anti-reka angka.
+    instructions: >-
+      Aliran tetap: (1) carian_dataset di data.gov.my untuk set data yang relevan; (2)
+      ambil_dataset untuk butiran dan sumber fail set data yang dipilih; (3) analisis_teks_bm
+      dan penukar_unit untuk meringkas dan menormalkan angka (format RM, unit tempatan).
+      PERATURAN MUTLAK: jangan sesekali mereka angka statistik. Jika data.gov.my gagal atau
+      tiada set data sepadan, katakan dengan jelas, berikan apa yang anda TAHU dengan tanda
+      "perlu disahkan", dan berikan URL sumber tepat (data.gov.my, dosm.gov.my) untuk
+      pengguna semak sendiri. Untuk setiap penemuan: nyatakan sumber, tarikh data, skop
+      (negeri/negara) dan had data. Jika carta perlu, minta mermaid_carta.
+    tools:
+      - malaysia/carian_dataset
+      - malaysia/ambil_dataset
+      - malaysia/analisis_teks_bm
+      - malaysia/penukar_unit
+
+  - slug: lukis-carta
+    title: Jana carta organisasi Mermaid
+    summary: >-
+      Jana carta organisasi Mermaid yang sah dan kemas dari struktur yang anda berikan atau
+      dari templat pelayan malaysia.
+    instructions: >-
+      Untuk carta organisasi mana-mana struktur: susun senarai nod (id, label, induk) dengan
+      jawatan dalam Bahasa Melayu, kemudian panggil mermaid_carta dari pelayan MCP "malaysia"
+      untuk jana dan sahkan carta - jangan tulis blok Mermaid dengan tangan bila alat ini
+      ada, kerana alat itu mengesahkan id unik, induk wujud dan had 40 nod. Untuk organisasi
+      kerajaan mulakan dari carta_organisasi_persekutuan; untuk syarikat mulakan dari
+      struktur_organisasi_templat (jenis: sdn-bhd, berhad, glc, sme, koperasi; saiz: kecil,
+      sederhana, besar). Jika alat melaporkan ralat pengesahan, baiki senarai nod mengikut
+      ralat itu dan panggil semula. Keluarkan blok Mermaid akhir dengan penerangan ringkas
+      setiap lapisan, dan jangan sesekali letak nama individu dalam carta - jawatan sahaja.
+    tools:
+      - malaysia/mermaid_carta
+      - malaysia/struktur_organisasi_templat
+      - malaysia/carta_organisasi_persekutuan
+
+  - slug: hari-kelepasan
+    title: Perancangan cuti Malaysia
+    summary: >-
+      Semak hari kelepasan am Malaysia untuk perancangan tarikh - hanya cuti tetap DISAHKAN
+      boleh dirancang terus.
+    instructions: >-
+      Gunakan alat kalendar_cuti dari pelayan MCP "malaysia" untuk senarai hari kelepasan am.
+      PERATURAN: hanya cuti bertanda DISAHKAN (tetap Gregorian) boleh digunakan untuk
+      perancangan terus; cuti bertanda PERLU DISAHKAN (takwim Islam/Cina/Tamil) mesti
+      ditanda "perlu disahkan dengan kalendar rasmi" dalam jawapan anda. Bila pengguna
+      merancang tarikh akhir atau acara, semak jangan jatuh pada hari kelepasan am dan tawarkan
+      tarikh alternatif bila berlanggar. Nyatakan bahawa cuti khusus negeri tidak disertakan
+      oleh alat ini. Untuk perancangan bajet atau nilai kewangan berkaitan, gunakan
+      penukar_unit untuk format RM yang konsisten.
+    tools:
+      - malaysia/kalendar_cuti
+      - malaysia/penukar_unit
+
+  # ============================ FLOK F&B (BARU) ============================
+
+  - slug: scenari-fnb
+    title: Nilai senario F&B Malaysia
+    summary: >-
+      Bandingkan enam senario perniagaan F&B (kopitiam, kafe, dapur awan, keluarga, katering,
+      food truck) dengan data pasaran DOSM yang disahkan.
+    instructions: >-
+      Gunakan alat scenari_fnb dari pelayan MCP "malaysia" SEBELUM memberi sebarang cadangan
+      perniagaan F&B. Angka pasaran dari alat ialah DISAHKAN (DOSM: hasil RM83.0B 2025,
+      136,453 pertubuhan); angka modal/margin ialah ANGGARAN dan mesti dilabel begitu.
+      Peraturan kewangan yang disahkan: SST perkhidmatan F&B = 6% (bukan 8%) ambang
+      RM1,500,000/12 bln; sewa 8% ambang RM500k dari 1 Jul 2025; halal JAKIM sah 2 tahun
+      via MYeHALAL. Sentiasa jalankan kira_bep bagi cadangan perniagaan sebelum syorkan,
+      dan jangan sesekali janji keuntungan atau kadar kejayaan. Akhiri dengan senarai
+      perkara yang pengguna perlu sahkan sendiri (modal sebenar, sewa, permit PBT).
+    tools:
+      - malaysia/scenari_fnb
+      - malaysia/kira_bep
+
+  - slug: kos-menu-fnb
+    title: Kos menu & harga F&B
+    summary: >-
+      Kira kos bahan -> harga jual -> BEP untuk menu F&B dengan piawaian food-cost 28-35%
+      dan harga psikologi.
+    instructions: >-
+      Aliran tetap: (1) senaraikan bahan dengan anggaran kos per unit (label ANGGARAN bila
+      tiada data pembekal); (2) kalkulator_harga_jual untuk harga jual sasaran food-cost
+      28-35% dengan pembundaran psikologi RM0.90; (3) kira_bep untuk semak kesihatan
+      perniagaan (amaran <1.1x BEP). Ingatkan pengguna: kos pembolehubah mesti masukkan
+      pembungkus DAN komisen platform delivery (dilaporkan 25-35%, ANGGARAN) untuk jualan
+      online; SST F&B 6% hanya bila jualan > RM1.5M. Jangan beri harga tanpa alat - semua
+      harga mesti keluar dari kalkulator_harga_jual supaya konsisten.
+    tools:
+      - malaysia/kalkulator_harga_jual
+      - malaysia/kira_bep
+      - malaysia/penukar_unit
+
+  - slug: kempen-fnb
+    title: Kempen kandungan F&B
+    summary: >-
+      Pelan kandungan mingguan TikTok/IG/WhatsApp untuk jenama F&B mengikut funnel tempatan
+      Malaysia.
+    instructions: >-
+      Gunakan alat pelan_kandungan_fnb dari pelayan MCP "malaysia" sebagai kerangka mingguan,
+      kemudian tulis kandungan sebenar (kapsyen, skrip, teks skrin) dalam BM mesra. Funnel
+      tempatan: Kesedaran -> Percubaan -> Berulang -> Advokasi; satu kandungan satu mesej;
+      hook 3 saat pertama kuat. Semak analisis_teks_bm untuk panjang (kapsyen <150 perkataan)
+      dan kalendar_cuti untuk musim kempen (hanya cuti DISAHKAN untuk perancangan terus).
+      Hormati sensitiviti: halal, puasa (elak kandungan makanan siang Ramadhan), perayaan
+      pelbagai kaum. Tiada klaim kesihatan palsu, tiada diskaun palsu, semua harga dilabel
+      "sahkan dengan pemilik" bila pengguna tidak beri. Untuk storyboard video/prompt AI
+      imej, bekerjasama dengan Ejen Pemasaran AI; untuk salinan broadcast WhatsApp, rujuk
+      Ejen CRM.
+    tools:
+      - malaysia/pelan_kandungan_fnb
+      - malaysia/analisis_teks_bm
+      - malaysia/kalendar_cuti
+
+  - slug: prospek-fnb
+    title: Pipeline prospek B2B F&B
+    summary: >-
+      Jana senarai sasaran B2B (katering korporat, acara, franchise) dengan ICP, draf
+      perhubungan dan jadual susulan hari 1/3/7/14.
+    instructions: >-
+      Untuk sebarang kerja prospek B2B: mulakan dengan scenari_fnb untuk konteks segmen
+      (katering = RM6.7B, 16,208 pertubuhan, DISAHKAN). Hasilkan: (1) ICP kelayakan (saiz,
+      bajet, tempoh, geografi - prioritikan KL/Selangor = 40% output negara, DISAHKAN); (2)
+      senarai sasaran bila pengguna beri nama - senarai dari ingatan mesti dilabel "perlu
+      disahkan", jangan buat-buat kenalan; (3) draf sentuhan pertama (WhatsApp <=80 perkataan
+      atau emel <=150 perkataan, satu CTA); (4) jadual susulan hari 1/3/7/14 dengan sudut
+      berbeza; (5) kalkulator_harga_jual untuk kos per pax sebelum margin bila sebut harga
+      katering. Hormati PDPA 2010: tiada data lebih daripada perlu, sentiasa ada pilihan
+      berhenti. Lapor prospek dalam format: nama, sumber, tahap (sejuk/suai/panas), tindakan
+      seterusnya.
+    tools:
+      - malaysia/scenari_fnb
+      - malaysia/kalkulator_harga_jual
+      - malaysia/analisis_teks_bm
+
+  - slug: balasan-ulasan
+    title: Balasan ulasan pelanggan
+    summary: >-
+      Jana balasan ulasan Google Maps/platform delivery dalam BM dan EN dengan nada jenama
+      konsisten - tanpa janji bayaran balik automatik.
+    instructions: >-
+      Gunakan alat jawab_ulasan dari pelayan MCP "malaysia" untuk SEMUA balasan ulasan,
+      kemudian suaikan nada jenama yang pengguna minta. Garis merah: jangan janji bayaran
+      balik/percuma tanpa kelulusan pemilik; elak pertengkaran awam; alihkan resolusi ke
+      WhatsApp/DM. Ulasan negatif: akui -> maaf ikhlas -> tindakan konkrit (tanya pemilik
+      apa tindakan sebenar yang boleh ditawarkan) -> saluran luar talian. Ulasan positif:
+      terima kasih + jemput kembali + kongsi dengan krew. Balas semua ulasan dalam 24-48
+      jam - ulasan Google mempengaruhi trafik carian "kedai makan dekat sini". Untuk
+      kandungan suara/khidmat pelanggan lanjut, rujuk Ejen Suara.
+    tools:
+      - malaysia/jawab_ulasan
+      - malaysia/analisis_teks_bm
+
+  # ============================ META (sedia ada) ============================
+
+  - slug: skill-creator
+    title: Tulis satu kemahiran
+    summary: Wawancara saya tentang kemahiran yang saya mahu, kemudian tulis dan simpan.
+    instructions: >-
+      Anda menulis satu kemahiran: arahan bernama yang sesiapa dalam deployment ini boleh
+      panggil dengan `/`. Wawancara dahulu, tulis kemudian, dan simpan hanya apa yang orang
+      itu sudah setuju. Satu kemahiran di sini ialah empat perkara dan tiada yang lain: satu
+      slug sebagai identitinya, satu tajuk untuk menu, satu ringkasan satu baris, dan
+      arahan yang Bot ikut bila dipanggil. Ia boleh menyatakan alat yang diperlukannya, dan
+      itu pernyataan bukan geran: alat yang Bot tidak pegang tidak akan dimuatkan. Tiada
+      fail, tiada skrip, tiada lampiran. Apa yang tidak muat dalam medan itu bukan kemahiran.
+
+  - slug: bot-creator
+    title: Buat satu Bot
+    summary: Tentukan apa Bot baru patut jadi, kemudian letakkannya di hadapan anda untuk dicipta.
+    instructions: >-
+      Anda menentukan apa seorang rakan sekerja baru patut jadi, dan wawancara itu lebih
+      penting daripada kelajuan: apa yang anda tulis menjadi arahan tetap yang diserahkan
+      kepada model pada setiap giliran dalam setiap saluran yang rakan sekerja itu berada.
+      Mulakan dengan list_bots. Jika sesuatu di sini sudah buat kerja yang diterangkan,
+      katakan begitu dan tawarkan yang itu. Tulis name, title, role_description dan
+      instructions yang pendek, khusus dan boleh diukur, kemudian tawarkan untuk mencipta
+      Bot itu dengan save_bot, dan tunggu kelulusan sebelum menyimpan.
