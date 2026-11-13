@@ -121,6 +121,16 @@ const EARLY_INPUT_LIMIT = 256;
 /** How much may sit unsent to a person's browser before a new frame is held back: about one frame. */
 const STREAM_BUFFER_LIMIT = 128 * 1024;
 
+/**
+ * HOW LONG A COPILOTRUNTIME REQUEST MAY GO WITHOUT SENDING ANYTHING, past the 10 s after which `Bun.serve`
+ * closes a request that has sent nothing (its default `idleTimeout`) while its handler is still at work.
+ *
+ * Bun's ceiling is 255 s. A run's stream writes as it goes, so this is really the budget for the quiet
+ * stretches: `info` resolving the whole Bot roster, and a run from `agent/run` until the runner says its
+ * first event (`AGENT_STALL_TIMEOUT_MS` gives up at 120 s, under this).
+ */
+const COPILOTKIT_REQUEST_SECONDS = 255;
+
 /** How often a held frame looks again for room, besides when Bun says the socket drained. */
 const HELD_FRAME_RETRY_MS = 50;
 
@@ -272,6 +282,16 @@ export function startHttpServer(deps: {
       }
       if (url.pathname === "/api/voice/calls") server.timeout(request, 30);
       if (url.pathname === "/api/voice/sessions") server.timeout(request, 30);
+      // The CopilotKit runtime's routes answer slower than Bun's 10 s too, and when they do the person's
+      // request dies with an empty reply the proxy reports as 502: `info` resolves the whole roster before it
+      // answers (every Bot built, its tools and capabilities asked), which on a deployment of any size is
+      // past the 10 s nothing-has-been-sent mark; and a run holds the request open from `agent/run` until the
+      // runner has taken the thread and the first event is streaming. Kept open past all of that, so the
+      // handshake and the run's own stream reach the browser. The stream's writes reset this idle clock; the
+      // silence it is here for is the stretch before the first one.
+      if (url.pathname.startsWith("/api/copilotkit/")) {
+        server.timeout(request, COPILOTKIT_REQUEST_SECONDS);
+      }
       // The person's browser's routes wait on its computer for longer than Bun's 10 s: a cold open, a slow page. Kept
       // open for each route's own budget, so its answer, or its sentence, reaches the person (browser/routes.ts). A
       // Bot's browser's routes the same, for a start, a Stop waiting on the last of a recording, a slow page
