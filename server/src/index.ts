@@ -10,6 +10,7 @@ import { createTurnRunner } from "@openbot/toolkit/run-turn";
 import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import { createActivityStore } from "./activity/activity";
+import { guardrailBootLine } from "./guardrail";
 import {
   auditRoutineStore,
   enterpriseControls,
@@ -3426,4 +3427,5 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
   });
 }
 
+console.info(guardrailBootLine());
 console.info(`OpenBot server listening on http://127.0.0.1:${port}`);
