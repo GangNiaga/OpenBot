@@ -7,6 +7,16 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
+# Proses lama boleh masih hidup: Render mula semula entrypoint dalam bekas yang sama bila ia
+# mengesan port baharu ("Restarting deploy to update network configuration"), dan proses latar
+# belakang (&) milik but sebelumnya tidak mati bersama PID 1. Mereka pegang 4210/19099/10000 dan
+# but baharu mati dengan EADDRINUSE. Bunuh sebelum apa-apa dimulakan, supaya setiap but mengikat
+# dengan bersih.
+for pattern in "examples/malaysia/mcp/server.ts" "examples/malaysia/intelligence-mock.ts" "src/index.ts"; do
+  command -v pkill >/dev/null 2>&1 && pkill -f "$pattern" 2>/dev/null || true
+done
+sleep 1
+
 echo "[cloud] migrasi database (Supabase)..."
 (cd server && bun scripts/migrate.ts) || { echo "[cloud] migrasi gagal - deploy dihenti"; exit 1; }
 

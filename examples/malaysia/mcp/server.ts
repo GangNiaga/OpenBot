@@ -1399,6 +1399,11 @@ app.get("/health", (_req, res) => {
   res.json({ service: "malaysia-mcp", tools: 18, status: "ok" });
 });
 
-app.listen(PORT, () => {
+// Loopback only. Render treats the first port a container opens as its primary and routes the
+// public URL to it; on 0.0.0.0 this MCP server won that race against the slower API and the
+// service URL started answering MCP shapes on /health. The MCP server is an in-stack component:
+// the API proxies its tools and bootstrap registers it over 127.0.0.1, so nothing outside the
+// container needs to reach it, and the only port Render should ever see is the API's own.
+app.listen(PORT, "127.0.0.1", () => {
   console.info(JSON.stringify({ type: "malaysia-mcp", url: `http://127.0.0.1:${PORT}/mcp`, tools: 18 }));
 });
