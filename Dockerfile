@@ -196,6 +196,9 @@ COPY agent-computer/package.json agent-computer/package.json
 # `app/dist`. Copying the directory ships four more entries with nothing to do here, to fix one that
 # has something to do.
 COPY scripts/composio-smoke.ts scripts/composio-smoke.ts
+# The cloud startup script: one container brings up migration, MCP Malaysia, the mock
+# Intelligence and the API itself (Render). The rest of `scripts/` stays the laptop's.
+COPY scripts/start-cloud.sh scripts/start-cloud.sh
 
 # The built app, served by the API on the same origin. There is no CORS in this server, so this is
 # not a convenience: two origins would simply fail.
@@ -338,4 +341,4 @@ EXPOSE 3001
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=5 \
   CMD bun -e "const r = await fetch('http://127.0.0.1:3001/health'); process.exit(r.ok ? 0 : 1)"
 
-ENTRYPOINT ["/init"]
+ENTRYPOINT ["/bin/bash", "/app/scripts/start-cloud.sh"]

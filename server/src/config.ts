@@ -639,9 +639,16 @@ function singleUserAllowed(
   ].filter((value): value is string => value !== undefined);
 
   const published = reachable.filter((value) => reachOf(value) === "public");
-  if (published.length > 0) {
+  const allowPublic =
+    optional(environment, "OPENBOT_SINGLE_USER_ALLOW_PUBLIC") === "true";
+  if (published.length > 0 && !allowPublic) {
     throw new Error(
       `OPENBOT_SINGLE_USER admits every request as one administrator with no sign-in, so it cannot be combined with an address the public internet reaches: ${published.join(", ")}. Configure GOOGLE_OAUTH_*, MICROSOFT_OAUTH_* or OKTA_OAUTH_* with BETTER_AUTH_SECRET and BETTER_AUTH_URL, or serve it somewhere only you reach.`,
+    );
+  }
+  if (published.length > 0 && allowPublic) {
+    console.warn(
+      `OPENBOT_SINGLE_USER_ALLOW_PUBLIC=true: this deployment answers on the public internet (${published.join(", ")}) as one administrator with no sign-in. Everyone who reaches these addresses IS that administrator. Turn this off and configure a sign-in provider if that is not exactly what was meant.`,
     );
   }
 
