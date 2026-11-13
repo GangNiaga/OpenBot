@@ -6,6 +6,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: vercel-production
   cancel-in-progress: true
@@ -14,14 +17,16 @@ jobs:
   deploy:
     name: Deploy production
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
 
       - name: Pasang Vercel CLI
-        run: npm install -g vercel@latest
+        run: npm install -g vercel@65.15.0
 
       - name: Pautan projek Vercel
         run: vercel link --yes --project=openbot --token=${{ secrets.VERCEL_TOKEN }}
