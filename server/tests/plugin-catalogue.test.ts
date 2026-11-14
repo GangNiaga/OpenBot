@@ -109,6 +109,13 @@ describe("which servers this deployment will talk to", () => {
         // https requirement below does not apply. Asserted positively instead, so this branch
         // cannot quietly become a loophole for a future entry that DOES dial a real host.
         expect(entry.host).toBe("builtin://routines");
+      } else if (entry.host.startsWith("http://127.0.0.")) {
+        // Loopback: a service this deployment starts ITSELF inside its own container
+        // (malaysia on 4210, memori on 4211, both launched by `start-cloud.sh`), so the
+        // https rule for third-party vendors does not apply. Asserted as the exact loopback
+        // shape rather than any http://, so this branch stays a named exception and a future
+        // plain-http entry pointing at a real host still fails the https branch below.
+        expect(entry.host).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
       } else {
         expect(entry.host.startsWith("https://")).toBe(true);
       }

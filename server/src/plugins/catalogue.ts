@@ -192,6 +192,21 @@ const EXA_READ_TOOLS = Object.freeze([
   "web_search_advanced_exa",
 ]);
 
+/**
+ * The Composio meta-tools that only look things up. Connection waits, skill reads and the two
+ * search/schema readers answer questions; every other tool this server advertises creates,
+ * executes or changes something — the two executors (`COMPOSIO_MULTI_EXECUTE_TOOL`,
+ * `COMPOSIO_PROXY_EXECUTE`) run whatever their arguments name, which is the whole point of
+ * them, and so classify as writes whatever they touch.
+ */
+const COMPOSIO_READ_TOOLS = Object.freeze([
+  "COMPOSIO_SEARCH_TOOLS",
+  "COMPOSIO_GET_TOOL_SCHEMAS",
+  "COMPOSIO_WAIT_FOR_CONNECTIONS",
+  "COMPOSIO_SEARCH_SKILLS",
+  "COMPOSIO_USE_SKILL",
+]);
+
 /** Crawls, agents, browser sessions and feedback start work or change state at Firecrawl. */
 const FIRECRAWL_WRITE_TOOLS = Object.freeze([
   "firecrawl_crawl",
@@ -309,6 +324,63 @@ export const CATALOGUE: readonly CatalogueEntry[] = Object.freeze([
     writeTools: FIRECRAWL_WRITE_TOOLS,
     readTools: FIRECRAWL_READ_TOOLS,
     docsUrl: "https://docs.firecrawl.dev/mcp-server",
+  },
+
+  {
+    /*
+     * Composio's hosted MCP server, which fronts their whole toolkit catalogue behind ONE
+     * session of meta-tools: `COMPOSIO_SEARCH_TOOLS` finds actions across 500+ apps, and
+     * `COMPOSIO_MULTI_EXECUTE_TOOL` runs the ones it found. The model never sees thousands of
+     * schemas at once — it searches, then executes, which is exactly the shape this
+     * deployment's own tool-selection already works in.
+     *
+     * THE KEY IS A CONSUMER MCP KEY, NOT A PLATFORM KEY, AND THE TWO ARE NOT INTERCHANGEABLE.
+     * Composio's dashboard hands this key out on the "Sessions & API Key" page with the words
+     * "MCP clients can authenticate two ways: with an API key sent in the `x-consumer-api-key`
+     * header, or with OAuth". A `ck_...` key sent to the platform REST API at
+     * `backend.composio.dev/api/v3(.1)` answers 401 `APIKey_InvalidAPIKey` in every auth
+     * scheme that API has — that endpoint wants a project key (`ak_...`) and this is not one.
+     * The MCP endpoint below is the only thing a consumer key opens, and it opens it fully:
+     * `initialize` and `tools/call` were answered 200 against `connect.composio.dev/mcp`
+     * during review. The header names the whole difference, which is why the entry carries
+     * it rather than trusting `Authorization` to work by accident.
+     *
+     * `connect.composio.dev` is Composio's CURRENT consumer MCP host. The older
+     * `mcp.composio.dev` now 301s into the marketing site, and per-user URLs minted there
+     * are the retired per-server API; this entry dials the host their current docs name
+     * ("For consumer connections, use `https://connect.composio.dev/mcp`").
+     *
+     * THE SANDBOX TOOLS ARE ALL WRITES, DELIBERATELY. `COMPOSIO_REMOTE_BASH_TOOL` and
+     * `COMPOSIO_REMOTE_WORKBENCH` run code in a hosted shell this deployment cannot see
+     * into — the same property the broker adapter refuses sessions for (see
+     * `composio-adapter.ts`: no session, because a session brings a remote surface nothing
+     * here can audit). They are left in the catalogue rather than dropped because the
+     * consumer endpoint exposes them on every listing and hiding a tool the vendor
+     * advertises is a decision for a rule, not for this file; classifying both as writes
+     * means chat treats them like every other state-changing action, and an administrator
+     * who wants them gone can skip them per server.
+     */
+    key: "composio",
+    title: "Composio",
+    vendor: "Composio",
+    summary:
+      "Search and run tools across 500+ apps (GitHub, Slack, Gmail, Notion...) through this deployment's Composio account.",
+    personalSummary:
+      "Search and run tools across 500+ apps (GitHub, Slack, Gmail, Notion...) through your Composio account.",
+    host: "https://connect.composio.dev",
+    path: "/mcp",
+    // Composio's consumer key travels in `x-consumer-api-key`, never in `Authorization`.
+    auth: { kind: "deployment-bearer", header: "x-consumer-api-key" },
+    /*
+     * READ TOOLS, AND EVERYTHING ELSE IS A WRITE. The reverse list rather than a write list,
+     * because the two executor tools can touch anything their search can name and a write list
+     * that tried to enumerate what they might change would assert a completeness nobody holds.
+     * `writeTools` is empty because every name it could hold is already decided by the
+     * readTools reverse-list rule; the shape requires the field regardless.
+     */
+    writeTools: Object.freeze([]),
+    readTools: COMPOSIO_READ_TOOLS,
+    docsUrl: "https://docs.composio.dev/docs/sessions-via-mcp",
   },
 
   {
