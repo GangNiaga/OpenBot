@@ -5,6 +5,9 @@
 > sumber rasmi yang berjaya diakses) dan **[ANGGARAN]** (amalan industri, perlu semakan).
 > Laporan research penuh tersimpan di `/tmp/fnb_malaysia_research.md`.
 
+> **STATUS SEMASA:** Nombor dalam dokumen ini adalah rekod research November 2025. Untuk
+> status semasa deployment, lihat **WAR-ROOM.md** dan **ECOSYSTEM-RESEARCH.md**.
+
 ---
 
 ## 1. Landskap Pasaran [DISAHKAN — DOSM/MySST]

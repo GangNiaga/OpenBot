@@ -15,7 +15,7 @@ Two audiences use the same app.
 
 ## Product Purpose
 
-OpenBot is an AI assistant that a company runs on its own infrastructure and can change completely. Any agent that speaks AG-UI arrives as a coworker. Success: employees use it as their everyday assistant, and the IT owner is confident about what each Bot can do.
+OpenBot is an AI assistant that a company runs on its own infrastructure and can change completely. Any agent that speaks AG-UI arrives as a Bot. Success: employees use it as their everyday assistant, and the IT owner is confident about what each Bot can do.
 
 ## Positioning
 

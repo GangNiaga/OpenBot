@@ -4,6 +4,8 @@
 
 War-pack ialah pemetaan 6 kemahiran pakej tenant Malaysia (`examples/malaysia/`) kepada standard terbuka **SKILL.md** ([agentskills.io](https://agentskills.io)). Setiap folder dalam `skills/` ialah skill kendiri yang boleh diimport ke mana-mana agen mematuhi standard itu tanpa mengubah kod OpenBot.
 
+Skill di sini sudah patuh standard **SKILL.md** rasmi [`anthropics/skills`](https://github.com/anthropics/skills) (195.1k bintang, Nov 2026); research ekosistem terkini (top-5 skill komuniti GitHub) ada di **`../ECOSYSTEM-RESEARCH.md`**.
+
 Sumber kebenaran (source of truth): **`examples/malaysia/skills.yaml`** — fail itu kekal sebagai definisi kemahiran asal untuk OpenBot; folder war-pack hanya cermin standard terbuka untuk pengguna luar.
 
 ## Format SKILL.md

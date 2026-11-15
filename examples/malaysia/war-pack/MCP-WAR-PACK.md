@@ -2,6 +2,8 @@
 
 Registry ini disahkan melalui GitHub REST API semasa research (Nov 2025); semua repositori yang disenaraikan disahkan wujud dan aktif pada masa research. Ini bukan jaminan masa depan — sahkan semula sebelum memasang.
 
+Katalog terkurasi OpenBot kini **14 entri** (`coingecko` dan `malaysiatransit` ditambah November 2026); sumber kebenaran semasa: `../../../server/src/plugins/catalogue.ts`.
+
 ## Cara daftar ke OpenBot
 
 - **Admin > Plugins** — antara muka admin untuk pelayan MCP yang disokong.

@@ -3,6 +3,7 @@
 **Kaedah:** API rasmi data.gov.my / storage.dosm.gov.my (CSV/XLSX DOSM), MySST (RMCD), halal.gov.my (JAKIM), SSM, GitHub API, HN Algolia, MCP tempatan `127.0.0.1:4210/mcp`
 **Konvensyen:** `[DISAHKAN - sumber]` = angka ditarik terus dari sumber rasmi yang berjaya diakses. `[ANGGARAN - perlu semakan]` = berasaskan amalan industri/pengetahuan umum, TIDAK disahkan dalam sidang ini.
 **Nota jujuk:** Reddit (403), moh.gov.my, epf.gov.my, perkeso.gov.my, kpdn.gov.my, jakim.gov.my TIDAK dapat diakses (lihat Bahagian 8 & 9). Terdapat SEMAKAN PENTING terhadap dakwaan "SST 8% untuk F&B" — lihat Q3.
+**Status:** Research November 2025 — rekod sejarah; research ekosistem terkini ada di **ECOSYSTEM-RESEARCH.md** (15 November 2026).
 
 ---
 

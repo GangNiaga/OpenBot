@@ -30,5 +30,6 @@ Start with [How OpenBot works](how-openbot-works.md): what a Bot has, and where 
 - [Desktop telemetry](../desktop/TELEMETRY.md): every event the desktop app sends, and what it carries.
 - [Product telemetry](TELEMETRY.md): the server's usage events, what they carry, and how to turn them off, with example PostHog queries in [telemetry-queries.sql](telemetry-queries.sql).
 - [First-use starter tasks](testing/first-use-tour.md): the starter tour offered before a first conversation, and how it was tested.
+- [Malaysia example package](../examples/malaysia/): the tenant package, its local MCP server, and the [ecosystem research](../examples/malaysia/ECOSYSTEM-RESEARCH.md) behind it.
 
 Do not include credential values, customer data, transcripts, or local-only notes in public docs.

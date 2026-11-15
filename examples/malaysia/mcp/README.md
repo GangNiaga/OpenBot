@@ -3,6 +3,11 @@
 Pelayan MCP Streamable HTTP yang dirujuk oleh `skills.yaml` dan `agents.yaml` pakej
 penyewa ini. **Endpoint: `http://127.0.0.1:4210/mcp`** (mod tanpa-keadaan, JSON).
 
+**Status (15 November 2026):** Pelayan `malaysia` kekal sebagai pelayan tempatan tersuai.
+Deployment semasa turut menjalankan 7 pelayan lain daripada katalog terkurasi — `coingecko`,
+`malaysiatransit`, `composio`, `exa`, `firecrawl`, `routines`, `memori` — dengan 117 alat
+keseluruhan. Rujuk `../../../docs/architecture.md` dan `../ECOSYSTEM-RESEARCH.md`.
+
 ## Penggunaan dalam sandbox ini
 
 Pelayan berjalan sebagai mini-service berasingan:

@@ -394,6 +394,12 @@ every deployment:
 
 ### Smaller changes
 
+- **The curated catalogue adds CoinGecko and Malaysia Transit.** Both connect without a key:
+  CoinGecko serves crypto market tools (prices, charts, trending, news) and Malaysia Transit
+  serves Malaysian transit tools (stop arrivals, fares, journey planning across KTM, RapidKL,
+  Penang ferry and more). An administrator enabling either sees its tools in Apps and grants
+  them to Bots as usual; every tool is classified read-only except CoinGecko's send_feedback,
+  which counts as a write.
 - The Bots page lists the Bots you can use first and leaves out empty sections. Bots, Routines,
   Connections and group conversations draw their rows' shape while they load, and a group
   conversation that fails to load offers Retry. Needs you says which part didn't load, with Retry,

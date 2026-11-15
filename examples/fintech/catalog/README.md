@@ -1,11 +1,11 @@
-# Coworkers to copy in
+# Bots to copy in
 
-Nothing in this directory is loaded. Each file declares one coworker, in the shape `../agents/`
+Nothing in this directory is loaded. Each file declares one Bot, in the shape `../agents/`
 reads: copy a file into `../agents/` and the next start registers it. They used to load by
 default, which put a dozen Bots in front of every new deployment at once.
 
-The point of one file per coworker is that a coworker becomes a thing you can handle: copy one in,
-delete one you do not want, send one to somebody. Nothing here is a grant. A coworker names skills,
+The point of one file per Bot is that a Bot becomes a thing you can handle: copy one in,
+delete one you do not want, send one to somebody. Nothing here is a grant. A Bot names skills,
 a skill names tools, and what it may actually call is what an administrator has granted it, so a
 file copied into `../agents/` adds an instruction and no capability.
 

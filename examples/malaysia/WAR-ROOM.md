@@ -11,6 +11,11 @@
 > deep research DOSM/MySST. Dokumen induk F&B: **FNB-PLAYBOOK.md**. Roster kini 21 Bot,
 > geran 378.
 
+> **STATUS SEMASA (15 November 2026):** Nombor dalam dokumen ini adalah rekod research
+> November 2025. Deployment semasa kini berjalan dengan **21 Bot, 8 pelayan MCP, 117 alat**.
+> Rujuk **ECOSYSTEM-RESEARCH.md** untuk research ekosistem terkini — dokumen ini kekal
+> sebagai rekod sejarah.
+
 ---
 
 ## 1. Carta Organisasi Pasukan (12 Bot)
