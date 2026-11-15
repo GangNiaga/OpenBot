@@ -494,6 +494,18 @@ export type DeploymentConfig = {
    * door for them standing open.
    */
   workerSharedSecret?: string;
+  /**
+   * Whether THIS server process also sweeps due routines and fires them itself.
+   *
+   * The designed firing mechanism is an out-of-process worker (`scripts/fire-routines.ts` under a
+   * CronJob, or `worker/` looped), because a schedule inside the API multiplies by replica count.
+   * The offer key plus the `next_run_at` compare-and-set make a second sweeper HARMLESS — three
+   * replicas waking at 09:00 still produce one work item and one run — so this flag exists for the
+   * single-container deployments that have no CronJob around them and whose background worker is
+   * one more process that can silently die (Render's entrypoint has no restart policy for it).
+   * Off by default, so a fleet that already runs the CronJob buys nothing here.
+   */
+  routineSweepInProcess: boolean;
 };
 
 type Environment = Record<string, string | undefined>;
@@ -1724,6 +1736,7 @@ export function loadConfig(
       ? { agentToolToken: optional(environment, "AGENT_TOOL_TOKEN") as string }
       : {}),
     ...(workerSharedSecret ? { workerSharedSecret } : {}),
+    routineSweepInProcess: environment.OPENBOT_ROUTINE_SWEEP_IN_PROCESS?.trim() === "on",
   };
   // Read once the rest has been, so a deployment missing something more basic is told that first.
   const config: DeploymentConfig = {

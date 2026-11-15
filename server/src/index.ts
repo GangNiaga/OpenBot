@@ -327,6 +327,11 @@ import { createTriggerStore } from "./responsibilities/triggers";
 import type { Responsibility } from "./responsibilities/types";
 import { createServerResponsibilityEngine } from "./responsibilities/wiring";
 import { createRoutineRunner } from "./routines/runner";
+import {
+  dispatchClaimedRoutines,
+  offerDueRoutines,
+  ROUTINE_FIRE_KIND,
+} from "./routines/sweep";
 import { createRoutineStore } from "./routines/store";
 import { createIntentRouter } from "./routing/classify";
 import {
@@ -2165,6 +2170,71 @@ const routineRunner = createRoutineRunner({
       Promise.resolve(undefined),
   }),
 });
+
+/*
+ * THE IN-PROCESS ROUTINE SWEEP, where the deployment asked for one.
+ *
+ * The same two phases `scripts/fire-routines.ts` runs — offer due routines, dispatch what was
+ * claimed — on a loop inside this process, with the dispatch calling the runner directly instead
+ * of over localhost HTTP: no worker process, no secret, and no background child that Render's
+ * entrypoint cannot restart if it dies. The offer key plus the `next_run_at` compare-and-set make
+ * this harmless beside an external worker: two sweepers racing for the 09:00 summary still offer
+ * one item and fire one run (see `routines/sweep.ts`'s idempotence note), so the external worker
+ * stays on and this only guarantees the schedule has a heartbeat.
+ *
+ * Gated on `OPENBOT_ROUTINE_SWEEP_IN_PROCESS=on` rather than always-on, because a fleet that
+ * already runs the CronJob gains nothing and pays the poll.
+ */
+if (config.routineSweepInProcess) {
+  const inProcessOwner = workOwner("routines-in-process");
+  const inProcessQueue = createWorkQueue(database);
+  const dispatchInProcess = async (routineRunId: string): Promise<void> => {
+    // The internal route's exact contract, without the HTTP hop: fire and answer nothing. The
+    // run row in `routine_runs` owns the outcome, and the queue's finish happens on acceptance.
+    void routineRunner.run(routineRunId).catch(() => {});
+  };
+  let inProcessPurgeTick = 0;
+  repeatAfterEach(async () => {
+    inProcessPurgeTick += 1;
+    try {
+      const options = {
+        routineStore,
+        queue: inProcessQueue,
+        dispatch: dispatchInProcess,
+        owner: inProcessOwner,
+      };
+      const { offered } = await offerDueRoutines(options);
+      const report = await dispatchClaimedRoutines(options);
+      if (report.fired.length || report.skipped.length || offered.length) {
+        console.info(
+          JSON.stringify({
+            type: "routine-sweep",
+            source: "in-process",
+            offered: offered.length,
+            considered: report.considered,
+            fired: report.fired.length,
+            skipped: report.skipped.length,
+          }),
+        );
+      }
+    } catch (error) {
+      console.error(
+        JSON.stringify({
+          type: "routine-sweep-in-process-error",
+          error: error instanceof Error ? error.message : String(error),
+          timestamp: new Date().toISOString(),
+        }),
+      );
+    }
+    // Hourly purge, mirroring the worker's cadence: finished items are the idempotence ledger
+    // and wedged items would otherwise block that routine's key for ever.
+    if (inProcessPurgeTick % 120 === 1) {
+      await inProcessQueue
+        .purge({ kind: ROUTINE_FIRE_KIND, olderThanMs: 24 * 60 * 60 * 1000 })
+        .catch(() => 0);
+    }
+  }, 30_000);
+}
 
 /**
  * Subagents: every Bot's way to give part of its work to a fresh run of itself (agents/subagent.ts).
