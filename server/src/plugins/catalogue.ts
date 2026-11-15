@@ -225,6 +225,89 @@ const FIRECRAWL_READ_TOOLS = Object.freeze([
 ]);
 
 /**
+ * CoinGecko's public demo server is market data only — every tool answers a question about
+ * prices, charts, categories, trending or news. `send_feedback` is the one exception: it
+ * records a report back to CoinGecko, so it names itself in the write list and the twelve
+ * readers name themselves in the reverse list. A tool the server adds later classifies as
+ * a write, which is the safe direction for a vendor that ships new endpoints quietly.
+ */
+const COINGECKO_READ_TOOLS = Object.freeze([
+  "get-coin-markets",
+  "compare-coins",
+  "get-coin-market-chart",
+  "get-coin-history",
+  "get-coin-info",
+  "search-coingecko",
+  "search-coins",
+  "get-trending",
+  "get-categories",
+  "get-global-market",
+  "get-top-gainers-losers",
+  "get-crypto-news",
+]);
+
+/**
+ * Every tool Malaysia Transit serves is a question about Malaysian public transport —
+ * arrivals, stops, routes, schedules, fares, KTM timetables, Penang ferry, journey
+ * planning. The fare "calculate" tools compute a quote and change nothing, and the
+ * health/debug/analytics tools read the middleware's own status, so all forty-nine name
+ * themselves here and the write list stays empty. Any tool the middleware adds later is
+ * a write until a person reads it, which is the right default for a community service
+ * this deployment does not operate.
+ */
+const TRANSIT_MY_READ_TOOLS = Object.freeze([
+  "list_service_areas",
+  "detect_location_area",
+  "get_area_info",
+  "search_stops",
+  "get_stop_details",
+  "get_stop_arrivals",
+  "find_nearby_stops",
+  "find_nearby_stops_with_arrivals",
+  "find_nearby_stops_with_routes",
+  "list_routes",
+  "get_route_stops",
+  "get_route_details",
+  "get_route_geometry",
+  "get_live_vehicles",
+  "get_provider_status",
+  "get_route_departures",
+  "get_next_departure",
+  "get_stop_routes",
+  "get_route_schedule",
+  "get_route_origin",
+  "get_route_status",
+  "get_fare_routes",
+  "get_route_stops_for_fare",
+  "calculate_fare",
+  "calculate_journey_fare",
+  "get_route_directions_for_fare",
+  "get_ktm_komuter_stations",
+  "calculate_ktm_komuter_fare",
+  "get_ktm_komuter_fare_matrix",
+  "get_ktm_station_departures",
+  "get_ktm_stations",
+  "get_ktm_schedules",
+  "find_nearby_ktm_stations",
+  "get_penang_ferry_overview",
+  "get_penang_ferry_schedule",
+  "get_penang_ferry_next_departure",
+  "get_penang_ferry_terminals",
+  "get_penang_ferry_fare",
+  "get_system_health",
+  "get_debug_info",
+  "get_api_analytics",
+  "get_area_analytics",
+  "plan_journey",
+  "get_journey_areas",
+  "places_autocomplete",
+  "place_details",
+  "get_fare_structures",
+  "get_ktm_intercity_fare",
+  "hello",
+]);
+
+/**
  * A short list, deliberately.
  *
  * Atlassian, Box, Slack, Salesforce and ServiceNow were here and were removed: each was a reviewed
@@ -324,6 +407,54 @@ export const CATALOGUE: readonly CatalogueEntry[] = Object.freeze([
     writeTools: FIRECRAWL_WRITE_TOOLS,
     readTools: FIRECRAWL_READ_TOOLS,
     docsUrl: "https://docs.firecrawl.dev/mcp-server",
+  },
+  {
+    /*
+     * CoinGecko's public demo MCP server — crypto market data (prices, market caps,
+     * charts, categories, trending, news) with no key at all: `initialize`, `tools/list`
+     * and `tools/call` were answered 200 against `mcp.coingecko.com/mcp` during review,
+     * anonymously, under a demo rate limit. Useful today for the finance Bot; an API key
+     * from the developer dashboard drops in later as a sibling `coingecko-authenticated`
+     * entry if the rate limit bites, without touching this one.
+     */
+    key: "coingecko",
+    title: "CoinGecko",
+    vendor: "CoinGecko",
+    summary:
+      "Crypto market data — prices, charts, trending, categories and news. Free public demo access, rate limited.",
+    host: "https://mcp.coingecko.com",
+    path: "/mcp",
+    auth: { kind: "none" },
+    writeTools: Object.freeze(["send_feedback"]),
+    readTools: COINGECKO_READ_TOOLS,
+    docsUrl: "https://docs.coingecko.com/reference/mcp-server",
+  },
+  {
+    /*
+     * Malaysia Transit — a community middleware that fronts real-time Malaysian public
+     * transport (Rapid Bus/Klang Valley, Penang ferry, KTM Komuter & Intercity, BAS.MY
+     * fares, a multi-modal journey planner) behind one streamable-HTTP endpoint. Handshake
+     * verified live at `mcp.techmavie.digital/malaysiatransit/mcp`, no auth, no key. This
+     * is the only entry in the catalogue whose data is Malaysian by default rather than by
+     * query, which is why it earns a slot alongside vendors with five-figure star counts.
+     *
+     * The host is not this deployment's own infrastructure — a community service with no
+     * SLA and an anonymous tier — so the entry stays `kind: "none"` (there is nothing to
+     * authenticate with, not even a key to hold) and every tool is a read. If the service
+     * disappears or turns hostile, an administrator removes the server and the grants go
+     * with it; nothing here needs a credential to revoke.
+     */
+    key: "malaysiatransit",
+    title: "Malaysia Transit",
+    vendor: "Techmavie",
+    summary:
+      "Real-time Malaysian public transport — bus/train arrivals, routes, schedules, fares, KTM, Penang ferry and journey planning. Free, no key.",
+    host: "https://mcp.techmavie.digital",
+    path: "/malaysiatransit/mcp",
+    auth: { kind: "none" },
+    writeTools: Object.freeze([]),
+    readTools: TRANSIT_MY_READ_TOOLS,
+    docsUrl: "https://github.com/hithereiamaliff/mcp-malaysiatransit",
   },
 
   {
