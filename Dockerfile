@@ -199,6 +199,14 @@ COPY scripts/composio-smoke.ts scripts/composio-smoke.ts
 # The cloud startup script: one container brings up migration, MCP Malaysia, the mock
 # Intelligence and the API itself (Render). The rest of `scripts/` stays the laptop's.
 COPY scripts/start-cloud.sh scripts/start-cloud.sh
+# The cloud MCP bootstrap: registers composio/exa/firecrawl/coingecko/malaysiatransit and
+# grants their tools to every Bot, idempotently, after the server is healthy. Its only
+# non-workspace import is `postgres`, already linked at the root for the memori example.
+COPY scripts/bootstrap-cloud-mcp.ts scripts/bootstrap-cloud-mcp.ts
+# The routines worker: the loop that fires due routines on this deployment (start-cloud.sh
+# backgrounds it once WORKER_SHARED_SECRET is set). It imports the server's sweep/store/queue
+# sources and `@openbot/shared`, all of which the runtime half of the image already ships.
+COPY worker worker
 
 # THE MALAYSIA MCP EXAMPLE'S IMPORTS, at the root. `examples/malaysia/mcp/server.ts` imports the
 # MCP SDK, express and zod, and the pruned production install only puts those where a manifest
