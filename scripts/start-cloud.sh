@@ -83,32 +83,34 @@ fi
 # hanya berkembang dalam shell ini.
 if [ -n "${WORKER_SHARED_SECRET:-}" ]; then
   echo "[cloud] mula routine sweeper (worker)..."
-  SERVER_INTERNAL_URL="http://127.0.0.1:${PORT:-3001}" bun worker/src/index.ts &
+  # Pool worker dipotong kepada 2 sambungan (DATABASE_URL lalai max=4): but membuka server(4)
+  # + memori(2) + worker(?) serentak, dan pooler Supabase mod-sesi mengehad 15 klien - tanpa
+  # had ini but boleh menolak sambungan (EMAXCONNSESSION diperhatikan di Render).
+  WORKER_DB_URL="$(printf '%s' "$DATABASE_URL" | sed 's/max=[0-9]*/max=2/')"
+  SERVER_INTERNAL_URL="http://127.0.0.1:${PORT:-3001}" DATABASE_URL="$WORKER_DB_URL" bun worker/src/index.ts &
+  worker_pid=$!
+  sleep 3
+  if ! kill -0 "$worker_pid" 2>/dev/null; then
+    echo "[cloud] AMARAN: routine sweeper mati serta-merta selepas mula - lihat ralat di atas"
+  else
+    echo "[cloud] routine sweeper hidup (PID $worker_pid)"
+  fi
 else
   echo "[cloud] AMARAN: WORKER_SHARED_SECRET tiada - routine sweeper TIDAK dimulakan; rutin tak akan berlari"
 fi
 
 (
-  # Bootstrap MCP Malaysia + Memori selepas pelayan siap (idempoten, bukan fatal jika gagal)
+  # Bootstrap MCP Malaysia + Memori dulu (HTTP sahaja, tiada sambungan DB), kemudian
+  # bootstrap MCP awan (composio/exa/firecrawl/coingecko/malaysiatransit) satu demi satu -
+  # bukan serentak - supaya ledakan sambungan DB semasa but tidak menolak satu sama lain.
   for i in $(seq 1 90); do
     sleep 2
     if curl -sf "http://127.0.0.1:${PORT:-3001}/health" > /dev/null 2>&1; then
-      OPENBOOT_SERVER_URL="http://127.0.0.1:${PORT:-3001}" bun examples/malaysia/bootstrap.ts && exit 0
-    fi
-  done
-  echo "[cloud] bootstrap MCP tidak siap dalam masa diberi (bukan fatal; boleh dijalankan semula)"
-) &
-
-# Bootstrap composio: daftar pelayan MCP composio + geran semua meta-alat kepada semua Bot
-# (idempoten - wire script yang sama pola dengan bootstrap MCP tempatan).
-(
-  for i in $(seq 1 90); do
-    sleep 2
-    if curl -sf "http://127.0.0.1:${PORT:-3001}/health" > /dev/null 2>&1; then
+      OPENBOOT_SERVER_URL="http://127.0.0.1:${PORT:-3001}" bun examples/malaysia/bootstrap.ts && \
       OPENBOOT_SERVER_URL="http://127.0.0.1:${PORT:-3001}" bun scripts/bootstrap-cloud-mcp.ts && exit 0
     fi
   done
-  echo "[cloud] bootstrap MCP awan tidak siap dalam masa diberi (bukan fatal)"
+  echo "[cloud] bootstrap MCP tidak siap dalam masa diberi (bukan fatal; boleh dijalankan semula)"
 ) &
 
 echo "[cloud] mula pelayan OpenBot di ${PORT:-3001}..."

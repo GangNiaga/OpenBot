@@ -22,6 +22,38 @@ if (!serverUrl) {
   );
 }
 
+/**
+ * The whole bootstrap, retried. Boot is when every other process in the container fills its
+ * pool, and Supabase's session-mode pooler caps the deployment at 15 clients — a first
+ * attempt that lands exactly in that burst dies with EMAXCONNSESSION (observed on Render).
+ * Three goes with a gap between them clears the burst; each phase re-reads what exists, so
+ * a partial attempt is simply finished by the next one.
+ */
+const MAX_ATTEMPTS = 3;
+const RETRY_MS = 12_000;
+
+for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+  try {
+    await bootstrap();
+    process.exit(0);
+  } catch (error) {
+    console.warn(
+      JSON.stringify({
+        type: "bootstrap-cloud-mcp-attempt-failed",
+        attempt,
+        reason: error instanceof Error ? error.message : String(error),
+      }),
+    );
+    if (attempt < MAX_ATTEMPTS) await new Promise((r) => setTimeout(r, RETRY_MS));
+  }
+}
+console.warn(
+  JSON.stringify({ type: "bootstrap-cloud-mcp-gave-up", attempts: MAX_ATTEMPTS }),
+);
+process.exit(1);
+
+async function bootstrap(): Promise<void> {
+
 /** Pelayan katalog yang deployment awan ini dijamin ada, dan siapa yang mengesahkannya. */
 const KEYLESS_SERVERS = ["exa", "firecrawl", "coingecko", "malaysiatransit"];
 const COMPOSIO_KEY_ID = "composio-consumer-mcp";
@@ -106,9 +138,11 @@ const serversToGrant = [...(composioCredentialId ? ["composio"] : []), ...KEYLES
 );
 
 const sql = postgres(process.env.DATABASE_URL!, { max: 1, idle_timeout: 5 });
+// postgres.js expands `${sql(list)}` as a comma-joined IN list; a raw array binds as ONE
+// array parameter, which silently matches no server_id and grants nothing.
 const toolRows = await sql`
   select server_id, name from mcp_tools
-  where server_id in (${serversToGrant})
+  where server_id in (${sql(serversToGrant)})
   order by server_id, name`;
 await sql.end();
 const refs = toolRows.map((r: { server_id: string; name: string }) => `${r.server_id}/${r.name}`);
@@ -159,3 +193,4 @@ console.info(
     grants: { created: ok, already: already, failed },
   }),
 );
+}
