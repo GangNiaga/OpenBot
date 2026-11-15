@@ -194,7 +194,7 @@ function barisMemori(b: {
   model?: string | null;
   created_at?: Date | string | null;
   skor?: number | null;
-  kosong?: number | null;
+  makna?: number | null;
   kata?: number | null;
   segar?: number | null;
 }): string {
@@ -206,7 +206,7 @@ function barisMemori(b: {
     typeof b.jarak === "number" ? ` | jarak ${b.jarak.toFixed(4)}` : "";
   const skor =
     typeof b.skor === "number"
-      ? ` | skor ${b.skor.toFixed(3)} (makna ${typeof b.kosong === "number" ? b.kosong.toFixed(2) : "-"}, kata ${typeof b.kata === "number" ? b.kata.toFixed(2) : "-"}, segar ${typeof b.segar === "number" ? b.segar.toFixed(2) : "-"})`
+      ? ` | skor ${b.skor.toFixed(3)} (makna ${typeof b.makna === "number" ? b.makna.toFixed(2) : "-"}, kata ${typeof b.kata === "number" ? b.kata.toFixed(2) : "-"}, segar ${typeof b.segar === "number" ? b.segar.toFixed(2) : "-"})`
       : "";
   const kind = b.kind ? ` [${b.kind}]` : "";
   return `- #${b.id}${kind}${jarak}${skor}${masa ? ` | ${masa}` : ""}\n  ${b.kandungan}`;
