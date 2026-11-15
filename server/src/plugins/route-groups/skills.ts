@@ -1,5 +1,6 @@
 import { currentEdition } from "../../edition";
 import { PluginRefusedError } from "../store";
+import { parseSkillMd, renderSkillMd, SkillMdRefusedError } from "../plugin-store/skill-md";
 import type { PluginRouteContext } from "./context";
 
 /** Writing and deleting skills. */
@@ -142,5 +143,106 @@ export function mountSkillRoutes({
 
     await store.uninstallSkill(slug, actorEmail(context));
     return context.json({ ok: true });
+  });
+
+  /*
+   * Export one skill as a SKILL.md document — the Agent Skills format
+   * (agentskills.io) that Claude, skills.sh, ClawHub and Composio read.
+   *
+   * Reading, not writing, and a skill is an instruction rather than a capability, so
+   * this carries no new authority: everything in the document is text the person could
+   * already read through GET /api/plugins. The slug that does not exist answers 404 —
+   * a missing skill is a different answer from a refusal to render one.
+   */
+  routes.get("/skills/:slug/skill.md", requireUser, async (context) => {
+    const slug = context.req.param("slug");
+    const skill = (await store.listSkills(skillActor(context))).find(
+      (record) => record.slug === slug,
+    );
+    if (!skill) {
+      return context.json({ error: "No such skill." }, 404);
+    }
+    let markdown: string;
+    try {
+      markdown = renderSkillMd(skill);
+    } catch (error) {
+      if (error instanceof SkillMdRefusedError) {
+        return context.json({ error: error.message }, 409);
+      }
+      throw error;
+    }
+    return new Response(markdown, {
+      headers: {
+        "content-type": "text/markdown; charset=utf-8",
+        "content-disposition": `inline; filename="${slug}.SKILL.md"`,
+      },
+    });
+  });
+
+  /*
+   * Import a SKILL.md document as a skill.
+   *
+   * Same authority as POST /skills — a skill is an instruction, not a capability — so
+   * the same non-admin rule, the same global gate and the same audit apply. The parsed
+   * slug, title, summary and instructions feed the same installSkill the JSON route
+   * calls; tool declarations come from the document's `metadata.openbot-tools` unless
+   * the caller overrides them, and every ref is validated by the store exactly as the
+   * JSON route's are.
+   */
+  routes.post("/skills/import", requireUser, async (context) => {
+    const body = (await context.req.json().catch(() => null)) as {
+      content?: unknown;
+      global?: boolean;
+      tools?: unknown;
+    } | null;
+    if (typeof body?.content !== "string" || !body.content.trim()) {
+      return context.json({ error: "A SKILL.md document is required." }, 400);
+    }
+    if (body.global !== undefined && typeof body.global !== "boolean") {
+      return context.json({ error: "Global must be true or false when it is present." }, 400);
+    }
+
+    let parsed;
+    try {
+      parsed = parseSkillMd(body.content);
+    } catch (error) {
+      if (error instanceof SkillMdRefusedError) {
+        return context.json({ error: error.message }, 400);
+      }
+      throw error;
+    }
+
+    const actor = skillActor(context);
+    if (body.global && !actor.isAdmin) {
+      return context.json({ error: "Only an admin can write a skill for everyone." }, 403);
+    }
+    const refusal = await skillRefusal(context, parsed.slug);
+    if (refusal) return context.json({ error: refusal }, 403);
+
+    // An explicit list wins over the document's declarations, so a caller can import a
+    // file and retarget its tools without editing the text.
+    const tools = Array.isArray(body.tools)
+      ? (body.tools as unknown[]).filter(
+          (ref): ref is string => typeof ref === "string" && Boolean(ref.trim()),
+        )
+      : parsed.tools;
+
+    try {
+      await store.installSkill({
+        slug: parsed.slug,
+        title: parsed.title,
+        summary: parsed.summary,
+        instructions: parsed.instructions,
+        ownerUserId: body.global === true && currentEdition() !== "personal" ? null : actor.id,
+        ...(tools.length ? { tools } : {}),
+        by: actorEmail(context),
+      });
+    } catch (error) {
+      if (error instanceof PluginRefusedError) {
+        return context.json({ error: error.message }, 400);
+      }
+      throw error;
+    }
+    return context.json({ skills: await store.listSkills(actor) });
   });
 }

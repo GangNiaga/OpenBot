@@ -17,7 +17,7 @@ cd "$(dirname "$0")/.."
 # `pkill` tiada dalam imej (procps tidak dipasang), jadi imbas /proc terus: baca cmdline setiap
 # proses, padankan corak, bunuh PID-nya. Corak tidak akan padankan skrip ini sendiri
 # (/bin/bash scripts/start-cloud.sh) atau ibu bapanya.
-for pattern in "examples/malaysia/mcp/server.ts" "examples/malaysia/memori/server.ts" "examples/malaysia/intelligence-mock.ts" "src/index.ts"; do
+for pattern in "examples/malaysia/mcp/server.ts" "examples/malaysia/memori/server.ts" "examples/malaysia/intelligence-mock.ts" "worker/src/index.ts" "src/index.ts"; do
   for proc in /proc/[0-9]*/cmdline; do
     if tr '\0' ' ' < "$proc" 2>/dev/null | grep -qF "$pattern"; then
       pid="${proc#/proc/}"
@@ -75,6 +75,19 @@ if ! kill -0 "$mock_pid" 2>/dev/null; then
   echo "[cloud] AMARAN: mock Intelligence mati serta-merta selepas mula - lihat ralat di atas"
 fi
 
+# Pembakar rutin: worker yang loop offerDueRoutines + dispatchClaimedRoutines setiap 30 saat
+# (worker/src/index.ts). Inilah enjin cron Bot - tanpa proses ini, rutin tak pernah berlari di
+# Render. Dispatch ke /internal/routines/run di localhost; kegagalan dispatch (server belum siap)
+# dilepaskan balik ke queue dan dicuba lagi - worker tak pernah mati atas ralat sementara.
+# WORKER_SHARED_SECRET datang dari env Render; SERVER_INTERNAL_URL dihitung di sini kerana $PORT
+# hanya berkembang dalam shell ini.
+if [ -n "${WORKER_SHARED_SECRET:-}" ]; then
+  echo "[cloud] mula routine sweeper (worker)..."
+  SERVER_INTERNAL_URL="http://127.0.0.1:${PORT:-3001}" bun worker/src/index.ts &
+else
+  echo "[cloud] AMARAN: WORKER_SHARED_SECRET tiada - routine sweeper TIDAK dimulakan; rutin tak akan berlari"
+fi
+
 (
   # Bootstrap MCP Malaysia + Memori selepas pelayan siap (idempoten, bukan fatal jika gagal)
   for i in $(seq 1 90); do
@@ -84,6 +97,18 @@ fi
     fi
   done
   echo "[cloud] bootstrap MCP tidak siap dalam masa diberi (bukan fatal; boleh dijalankan semula)"
+) &
+
+# Bootstrap composio: daftar pelayan MCP composio + geran semua meta-alat kepada semua Bot
+# (idempoten - wire script yang sama pola dengan bootstrap MCP tempatan).
+(
+  for i in $(seq 1 90); do
+    sleep 2
+    if curl -sf "http://127.0.0.1:${PORT:-3001}/health" > /dev/null 2>&1; then
+      OPENBOOT_SERVER_URL="http://127.0.0.1:${PORT:-3001}" bun scripts/bootstrap-cloud-mcp.ts && exit 0
+    fi
+  done
+  echo "[cloud] bootstrap MCP awan tidak siap dalam masa diberi (bukan fatal)"
 ) &
 
 echo "[cloud] mula pelayan OpenBot di ${PORT:-3001}..."

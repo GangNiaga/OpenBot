@@ -193,6 +193,10 @@ function barisMemori(b: {
   jarak?: number | null;
   model?: string | null;
   created_at?: Date | string | null;
+  skor?: number | null;
+  kosong?: number | null;
+  kata?: number | null;
+  segar?: number | null;
 }): string {
   const masa = b.created_at
     ? new Date(b.created_at).toISOString().replace("T", " ").slice(0, 16) +
@@ -200,8 +204,55 @@ function barisMemori(b: {
     : "";
   const jarak =
     typeof b.jarak === "number" ? ` | jarak ${b.jarak.toFixed(4)}` : "";
+  const skor =
+    typeof b.skor === "number"
+      ? ` | skor ${b.skor.toFixed(3)} (makna ${typeof b.kosong === "number" ? b.kosong.toFixed(2) : "-"}, kata ${typeof b.kata === "number" ? b.kata.toFixed(2) : "-"}, segar ${typeof b.segar === "number" ? b.segar.toFixed(2) : "-"})`
+      : "";
   const kind = b.kind ? ` [${b.kind}]` : "";
-  return `- #${b.id}${kind}${jarak}${masa ? ` | ${masa}` : ""}\n  ${b.kandungan}`;
+  return `- #${b.id}${kind}${jarak}${skor}${masa ? ` | ${masa}` : ""}\n  ${b.kandungan}`;
+}
+
+// ------------------------------------------------------------- Recall hibrid
+/**
+ * Carian hibrid: makna (cosine) + kata kunci (pertindihan token) + kesegaran.
+ *
+ * Cosine sahaja mudah terlebih mahal pada soalan pendek berunsur nama/istilah
+ * ("nama perusahaan saya") - embedding menangkap makna tetapi kadang kala terlepas
+ * padanan literal. Token kata kunci menebus itu, dan bonus kesegaran menolak memori
+ * lama yang sinonim tetapi lapuk ke bawah. Pemberat (0.70/0.20/0.10) kekal makna
+ * sebagai kuasa utama; kata kunci dan kesegaran hanya menyusun semula pesaing dekat.
+ */
+const HIBRID_W_MAKNA = 0.7;
+const HIBRID_W_KATA = 0.2;
+const HIBRID_W_SEGAR = 0.1;
+/** Bonus kesegaran luput dalam ~90 hari (separuh hayat kasar). */
+const SEGAR_HARI = 90;
+
+function tokenizeTeks(teks: string): string[] {
+  const stopwords = new Set([
+    "yang", "dan", "atau", "di", "ke", "dari", "pada", "untuk", "dengan", "apa",
+    "ada", "saya", "kami", "anda", "itu", "ini", "the", "of", "to", "in", "and",
+    "is", "my", "our", "your", "a", "an",
+  ]);
+  return teks
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter((t) => t.length > 1 && !stopwords.has(t));
+}
+
+function skorKata(pertanyaanTokens: string[], kandungan: string): number {
+  if (pertanyaanTokens.length === 0) return 0;
+  const teks = kandungan.toLowerCase();
+  const jumpa = pertanyaanTokens.filter((t) => teks.includes(t)).length;
+  return jumpa / pertanyaanTokens.length;
+}
+
+function skorSegar(created: Date | string | null | undefined): number {
+  if (!created) return 0;
+  const umurHari =
+    (Date.now() - new Date(created).getTime()) / (24 * 60 * 60 * 1000);
+  if (!Number.isFinite(umurHari) || umurHari < 0) return 0;
+  return Math.max(0, 1 - umurHari / SEGAR_HARI);
 }
 
 function ralatKeObject(e: unknown): string {
@@ -300,10 +351,11 @@ function buildMemoriServer(): McpServer {
     {
       title: "Cari memori tersimpan",
       description:
-        "Cari memori jangka panjang yang tersimpan dengan carian makna (cosine, pgvector HNSW). " +
-        "Guna bila pengguna bertanya apa yang anda sudah tahu tentang dirinya/perniagaannya, atau " +
-        "sebelum menjawab soalan yang jawapannya mungkin pernah diberi: 'apa nama perusahaan saya?', " +
-        "'apa janji saya minggu lepas?'. Pulangkan memori terdekat dengan nilai jarak (makin kecil makin dekat).",
+        "Cari memori jangka panjang yang tersimpan dengan carian hibrid: makna (cosine pgvector) + " +
+        "kata kunci (pertindihan token) + kesegaran. Guna bila pengguna bertanya apa yang anda sudah " +
+        "tahu tentang dirinya/perniagaannya, atau sebelum menjawab soalan yang jawapannya mungkin " +
+        "pernah diberi: 'apa nama perusahaan saya?', 'apa janji saya minggu lepas?'. Pulangkan memori " +
+        "terbaik dengan skor pecahan (makna/kata/segar) dan jarak cosine.",
       inputSchema: {
         pertanyaan: z
           .string()
@@ -353,13 +405,16 @@ function buildMemoriServer(): McpServer {
         const syarat = agent_id
           ? s`where agent_id = ${agent_id} or agent_id is null`
           : s``;
+        // Kandidat 4x gandaan supaya susunan semula hibrid ada ruang bekerja; had SQL
+        // kekal dibatasi kerana kandidat lebih hanya kos ingatan sementara.
+        const kandidatHad = Math.min(200, hadSelamat * 4);
         const baris = await s`
           select id, kandungan, kind, model, created_at,
                  (embedding <=> ${JSON.stringify(vec)}::vector) as jarak
           from memori_malaysia
           ${syarat}
           order by embedding <=> ${JSON.stringify(vec)}::vector
-          limit ${hadSelamat}`;
+          limit ${kandidatHad}`;
         if (baris.length === 0) {
           return {
             content: [
@@ -370,6 +425,19 @@ function buildMemoriServer(): McpServer {
             ],
           };
         }
+        // Susunan semula hibrid di atas kandidat cosine, kemudian potong kepada had.
+        const qTokens = tokenizeTeks(teks);
+        const diperingkat = baris
+          .map((b) => {
+            const makna = 1 - Number(b.jarak ?? 1);
+            const kata = skorKata(qTokens, String(b.kandungan ?? ""));
+            const segar = skorSegar(b.created_at);
+            const skor =
+              HIBRID_W_MAKNA * makna + HIBRID_W_KATA * kata + HIBRID_W_SEGAR * segar;
+            return { ...b, skor, makna, kata, segar };
+          })
+          .sort((a, b) => b.skor - a.skor)
+          .slice(0, hadSelamat);
         const amaran =
           model === "hash-lokal"
             ? "\n\nNOTA: embedding fallback hash tempatan sedang digunakan (API NVIDIA tidak sampai) - susunan mungkin kurang tepat."
@@ -379,8 +447,8 @@ function buildMemoriServer(): McpServer {
             {
               type: "text" as const,
               text:
-                `${baris.length} memori terdekat untuk "${teks}" (model: ${model}):\n\n` +
-                baris.map((b) => barisMemori(b)).join("\n") +
+                `${diperingkat.length} memori terbaik untuk "${teks}" (model: ${model}, hibrid makna/kata/segar):\n\n` +
+                diperingkat.map((b) => barisMemori(b)).join("\n") +
                 amaran,
             },
           ],
