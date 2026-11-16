@@ -11,6 +11,12 @@
  *    from a run to whoever watches the thread.
  *  - Replay: a client joining in `connect` mode gets a messages snapshot, the
  *    recorded events, `replay_complete`, and `stream_idle`.
+ *  - The project-key Learning API (`/api/v1/learning/...`) the runtime's
+ *    Learning sweep, auto-assign and review client call: containers, runs,
+ *    and the learned-skills ZIP snapshot. Containers are created on first
+ *    read; a started run advances to `succeeded` on its own after a few
+ *    seconds, with zero candidates - there is no evidence pipeline here to
+ *    mine, so an empty run is the honest outcome.
  *
  * Everything is in memory and restarts empty, which is the right size for a
  * demo: durable history across restarts is a platform concern this stand-in
@@ -49,6 +55,187 @@ const json = (value: unknown, status = 200) =>
   });
 
 const notFound = () => json({ error: "ROUTE_NOT_FOUND" }, 404);
+
+/* --------------------------------------------------------------------- */
+/* Learning: containers, runs, and the learned-skills snapshot.          */
+/* Wire contracts mirror Intelligence's project-key Learning API:        */
+/* {error: {code, retryable}} refusals, container/run objects that the   */
+/* runtime client's schemas parse, and a ZIP snapshot with revision +    */
+/* ETag headers the learned-skills reader accepts.                       */
+/* --------------------------------------------------------------------- */
+
+type LearningContainer = {
+  id: string;
+  name: string;
+  projectId: number;
+  promptContext: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type LearningRun = {
+  id: string;
+  learningContainerId: string;
+  projectId: number;
+  status: "queued" | "freezing" | "batching" | "reducing" | "finalizing" | "succeeded" | "failed";
+  triggerSource: "automatic" | "manual";
+  attemptCount: number;
+  candidateCount: number | null;
+  insightCount: number | null;
+  createdAt: string;
+  updatedAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  failureCode: string | null;
+  kubernetesJobName: string | null;
+};
+
+const learningContainers = new Map<string, LearningContainer>();
+const learningRunsByContainer = new Map<string, LearningRun[]>();
+
+// A stored (uncompressed) ZIP holding one README entry: the empty learned-
+// skills snapshot. Skills arrive with a real evidence pipeline, not here.
+const LEARNED_SKILLS_SNAPSHOT_ZIP = Buffer.from(
+  "UEsDBBQAAAAAAAZvcF3IUbXMYAAAAGAAAAAJAAAAUkVBRE1FLm1kIyBMZWFybmVkIHNraWxscwoKTm8gbGVhcm5lZCBza2lsbHMgeWV0LiBTa2lsbHMgYXBwZWFyIGhlcmUgYWZ0ZXIgYSBMZWFybmluZyBydW4gcHJvZHVjZXMgdGhlbS4KUEsBAhQDFAAAAAAABm9wXchRtcxgAAAAYAAAAAkAAAAAAAAAAAAAAIABAAAAAFJFQURNRS5tZFBLBQYAAAAAAQABADcAAACHAAAAAAA=",
+  "base64",
+);
+const LEARNED_SKILLS_REVISION = "rev-00000001";
+const LEARNED_SKILLS_ETAG = `"00763d7d94b5af1cdded81fbe71e3a4faf1aedcf639b61103922b9d7ce9baf71"`;
+
+function learningContainer(id: string): LearningContainer {
+  let container = learningContainers.get(id);
+  if (!container) {
+    container = {
+      id,
+      name: id === "openbot" ? "OpenBot Learning" : id,
+      projectId: 1,
+      promptContext: null,
+      createdAt: now(),
+      updatedAt: now(),
+    };
+    learningContainers.set(id, container);
+  }
+  return container;
+}
+
+function learningRuns(id: string): LearningRun[] {
+  let list = learningRunsByContainer.get(id);
+  if (!list) {
+    list = [];
+    learningRunsByContainer.set(id, list);
+  }
+  return list;
+}
+
+/** The Learning routes are keyed the way Intelligence's are: the bearer key
+ * must be the deployment's own project key (CPK_INTELLIGENCE_API_KEY). The
+ * mock is loopback-only, so the check is a formality - but the shape of the
+ * refusal matches the platform, so a misconfigured deployment reads as one. */
+function learningAuthorized(request: Request): boolean {
+  const expected = process.env.CPK_INTELLIGENCE_API_KEY;
+  if (!expected) return true; // No key configured: the loopback stand-in trusts itself.
+  return request.headers.get("authorization") === `Bearer ${expected}`;
+}
+
+const learningRefusal = (status: number, code: string) =>
+  json({ error: { code, retryable: false } }, status);
+
+/** A started run walks the queue on its own so `listLearningRuns` shows a
+ * completed run the sweep's next pass treats as finished. There is no
+ * evidence to mine, so the run succeeds with zero candidates. */
+function startLearningRun(containerId: string): LearningRun {
+  const run: LearningRun = {
+    id: crypto.randomUUID(),
+    learningContainerId: containerId,
+    projectId: 1,
+    status: "queued",
+    triggerSource: "automatic",
+    attemptCount: 1,
+    candidateCount: null,
+    insightCount: null,
+    createdAt: now(),
+    updatedAt: now(),
+    startedAt: null,
+    completedAt: null,
+    failureCode: null,
+    kubernetesJobName: null,
+  };
+  learningRuns(containerId).unshift(run);
+  const advance = () => {
+    run.updatedAt = now();
+    if (run.status === "queued") {
+      run.status = "batching";
+      run.startedAt = now();
+      setTimeout(advance, 1_500);
+      return;
+    }
+    if (run.status === "batching") {
+      run.status = "succeeded";
+      run.candidateCount = 0;
+      run.insightCount = 0;
+      run.completedAt = now();
+    }
+  };
+  setTimeout(advance, 1_500);
+  return run;
+}
+
+const LEARNING_CONTAINER_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+async function handleLearning(request: Request, url: URL): Promise<Response | undefined> {
+  if (!url.pathname.startsWith("/api/v1/learning/")) return undefined;
+  if (!learningAuthorized(request)) return learningRefusal(401, "AUTHENTICATION_FAILED");
+  const parts = url.pathname.split("/").filter(Boolean);
+  // ["api", "v1", "learning", "containers", id, rest?]
+  if (parts[3] !== "containers") return learningRefusal(404, "ROUTE_NOT_FOUND");
+  const containerId = parts[4] ?? "";
+  const rest = parts.slice(5).join("/");
+  if (!LEARNING_CONTAINER_ID.test(containerId)) return learningRefusal(404, "CONTAINER_NOT_FOUND");
+
+  if (!rest && request.method === "GET") {
+    return json({ container: learningContainer(containerId) });
+  }
+
+  if (rest === "runs" && request.method === "GET") {
+    return json({ runs: learningRuns(containerId).slice(0, 100) });
+  }
+
+  if (rest === "runs" && request.method === "POST") {
+    return json({ run: startLearningRun(containerId) });
+  }
+
+  if (rest === "skills" && request.method === "GET") {
+    const ifNoneMatch = request.headers.get("if-none-match");
+    if (ifNoneMatch && ifNoneMatch === LEARNED_SKILLS_ETAG) {
+      return new Response(null, {
+        status: 304,
+        headers: {
+          "X-CopilotKit-Skills-Revision": LEARNED_SKILLS_REVISION,
+          ETag: LEARNED_SKILLS_ETAG,
+        },
+      });
+    }
+    return new Response(new Uint8Array(LEARNED_SKILLS_SNAPSHOT_ZIP), {
+      status: 200,
+      headers: {
+        "content-type": "application/zip",
+        "X-CopilotKit-Skills-Revision": LEARNED_SKILLS_REVISION,
+        ETag: LEARNED_SKILLS_ETAG,
+      },
+    });
+  }
+
+  if (rest === "candidates" && request.method === "GET") return json({ candidates: [] });
+
+  return learningRefusal(404, "ROUTE_NOT_FOUND");
+}
+
+/** The containers list the container-picker and ensure-container reads. */
+async function handleLearningList(request: Request, url: URL): Promise<Response | undefined> {
+  if (url.pathname !== "/api/v1/learning/containers" || request.method !== "GET") return undefined;
+  if (!learningAuthorized(request)) return learningRefusal(401, "AUTHENTICATION_FAILED");
+  return json({ containers: [...learningContainers.values()], nextCursor: null });
+}
 
 function now() {
   return new Date().toISOString();
@@ -326,6 +513,11 @@ async function handleRest(request: Request, url: URL): Promise<Response | undefi
   }
 
   if (path === "/api/inspector/metadata") return json({ metadata: {} });
+
+  const learning = await handleLearning(request, url);
+  if (learning) return learning;
+  const learningList = await handleLearningList(request, url);
+  if (learningList) return learningList;
 
   const segments = path.split("/").filter(Boolean);
   // ["api", "threads", id?, rest?]
