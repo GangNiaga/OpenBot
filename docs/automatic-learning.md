@@ -43,6 +43,15 @@ With no container assigned, the server asks Intelligence, using its runtime key,
 - It never blocks startup or a turn. A missing container, a plan without Learning, or an unreachable Intelligence is logged once as a `learning-auto-assign` line and tried again later. The Admin page says which one applies.
 - `OPENBOT_LEARNING_AUTO_ASSIGN=false` (Helm: `config.learning.autoAssign: false`) turns it off.
 
+## Scheduled learning runs
+
+A deployment can keep Learning current without anybody pressing **Learn now**: with `OPENBOT_LEARNING_SWEEP=on` the server starts a Learning run on every container the Learning settings name — the default, and each Bot's own mapping — every `OPENBOT_LEARNING_SWEEP_HOURS` hours (default 6). Off by default, and a no-op while Learning is switched off in Admin.
+
+- A container whose run is still queued or running is skipped that pass, so replicas sweeping the same hours cannot start one run twice; the next pass starts the next run.
+- A person's own Learning space is never swept: the runs the sweep starts are the Bot containers'.
+- A run the sweep starts records a `configuration.changed` audit row as the deployment, naming the container and the run (`learning_run_started`).
+- The sweep never throws: an unreachable Intelligence, a container gone, a backend that refuses — each is logged for the next pass, and the server keeps running.
+
 ## Creating the container
 
 A current Intelligence lets a project's runtime key create a container in its own project (`POST /api/v1/learning/containers`), and OpenBot tries that first. Intelligence 0.15.1 and earlier create Learning containers (`POST /api/learning/projects/:projectId/containers`) for three callers only: a person's browser session, a CopilotKit CLI login, and a service token, which counts only on a CopilotKit local evaluation install; a runtime key is none of them. So OpenBot creates `openbot` with the runtime key where that works, otherwise wherever it holds one of those credentials, proves the result with the runtime key (a container the key cannot see is in another project and is reported, never assigned), and otherwise says exactly what to run:

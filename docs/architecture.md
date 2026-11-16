@@ -112,7 +112,7 @@ Each row therefore also names what caused it:
 | ---------------- | ---------------------- | ------------------------------------------------------ |
 | `person`         | none                   | Somebody was in the room. The default.                  |
 | `deployment`     | none                   | The deployment itself, at start-up or refusing a caller it could not identify. |
-| `routine`        | the routine's id       | A schedule fired it, as its owner, with nobody there.   |
+| `routine`        | the routine's id       | A schedule fired it, as its owner, with nobody there. A check-in's run carries the same kind, with a `proactive:` id.   |
 | `responsibility` | the goal's id          | One of a Bot's goals was triggered, as its owner, with nobody there. The value keeps the goal's code name. |
 | `memory`         | the memory source's id | Memory read a connected app to import facts, as the source's owner. |
 | `handoff`        | the Bot that handed on | Another Bot asked for this, on the person's behalf.     |
@@ -209,6 +209,19 @@ timed on the database's own clock, and an attempt cap. Neither runs as a timer i
 a timer fires in every replica and each would decide independently that the same firing or the same
 suspension is due; the queue is what lets exactly one claim it while every other replica's attempt
 collides harmlessly with the same row. See [routines.md](routines.md).
+
+## Learning runs and traces
+
+Learning runs start when an administrator presses **Learn now**, when Intelligence's own schedule
+decides, or from the deployment itself: with `OPENBOT_LEARNING_SWEEP=on` the server starts a run on
+each configured Learning container every `OPENBOT_LEARNING_SWEEP_HOURS` (default 6), skipping
+containers whose run is still in flight; see [automatic-learning.md](automatic-learning.md).
+
+Every headless turn — the routines and goals above, plus check-ins, follow-ups, subagents and
+Bot-to-Bot hops — runs through the same turn runner, and can emit one `openbot.turn` span
+(agent, thread, outcome, duration) to Langfuse when `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`
+and `LANGFUSE_BASE_URL` are set; unset variables mean nothing is constructed or sent. See
+[TELEMETRY.md](TELEMETRY.md).
 
 ## Components
 

@@ -3,10 +3,11 @@
 Pelayan MCP Streamable HTTP yang dirujuk oleh `skills.yaml` dan `agents.yaml` pakej
 penyewa ini. **Endpoint: `http://127.0.0.1:4210/mcp`** (mod tanpa-keadaan, JSON).
 
-**Status (15 November 2026):** Pelayan `malaysia` kekal sebagai pelayan tempatan tersuai.
+**Status (16 November 2026):** Pelayan `malaysia` kekal sebagai pelayan tempatan tersuai.
 Deployment semasa turut menjalankan 7 pelayan lain daripada katalog terkurasi — `coingecko`,
-`malaysiatransit`, `composio`, `exa`, `firecrawl`, `routines`, `memori` — dengan 117 alat
-keseluruhan. Rujuk `../../../docs/architecture.md` dan `../ECOSYSTEM-RESEARCH.md`.
+`malaysiatransit`, `composio`, `exa`, `firecrawl`, `routines`, `memori` — dengan 120 alat
+keseluruhan (memori kini 7 alat selepas kit RAG dokumen). Rujuk `../../../docs/architecture.md`
+dan `../ECOSYSTEM-RESEARCH.md`.
 
 ## Pelayan saudara: memori (port 4211)
 
@@ -56,10 +57,12 @@ Pelayan ini didaftarkan sebagai **entri katalog first-party** dalam
 
 Selepas pelayan berjalan, pentadbir menambahnya melalui `POST /api/plugins/servers`
 dengan `{"key": "malaysia"}` — OpenBot memanggil `tools/list` semasa menambah, jadi
-semua 13 alat ditemui serta-merta. Geran per Bot diberikan melalui
+semua 18 alat ditemui serta-merta. Geran per Bot diberikan melalui
 `POST /api/plugins/grants` (contoh penuh: `examples/malaysia/bootstrap.ts`).
 
-## 13 alat (semuanya baca sahaja, `readOnlyHint: true`)
+## 18 alat (semuanya baca sahaja, `readOnlyHint: true`)
+
+13 alat asal + 5 alat kit F&B (dilancarkan bersama `FNB-PLAYBOOK.md`):
 
 | Alat | Tujuan |
 |---|---|
@@ -76,6 +79,11 @@ semua 13 alat ditemui serta-merta. Geran per Bot diberikan melalui
 | `templat_minit_mesyuarat` | Templat minit mesyuarat gaya rasmi Malaysia |
 | `kalendar_cuti` | Hari kelepasan am (tetap DISAHKAN; takwim PERLU DISAHKAN) |
 | `glosari_kerajaan` | Glosari dwibahasa istilah kerajaan/korporat |
+| `scenari_fnb` | 6 senario perniagaan F&B + data pasaran DOSM + peraturan SST/halal |
+| `kalkulator_harga_jual` | Kos resipi -> harga jual, margin, SST 6%/8% |
+| `kira_bep` | Titik pulang modal (BEP) per suku, cakupan kos tetap |
+| `pelan_kandungan_fnb` | Pelan kandungan mingguan F&B per saluran |
+| `jawab_ulasan` | Draf balasan ulasan pelanggan (BM, nada sopan) |
 
 ## Prinsip data
 

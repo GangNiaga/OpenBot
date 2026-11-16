@@ -404,6 +404,9 @@ Old addresses redirect to the pages above:
 - **Loopback by default**: computers bind to `127.0.0.1` and require a per-container token, so nothing reaches a logged-in browser by knowing its port. The supervisor binds there too, because it holds the Docker socket and its token is a shared secret rather than a network boundary.
 - **Durable threads and memory**: conversations survive restarts through CopilotKit Intelligence, and each deployment stamps the threads it owns.
 - **Routines**: ask a Bot to do something on a schedule and it does, running as you, in the channel you asked in. A 15-minute floor and a cap of 20 enabled routines keep a sentence from scheduling more than a person meant, and ten failures in a row switch a routine off rather than burn model spend forever. Needs a worker process, which `scripts/start.sh` starts locally; see [docs/routines.md](docs/routines.md).
+- **Proactive check-ins**: a Bot quietly reads what is new in the apps its person connected and reaches out only when something needs them — at most one ping an hour, the same thing never raised twice, and work it starts is an ordinary task with the same governance; see [docs/routines.md](docs/routines.md).
+- **Learning on a schedule**: with `OPENBOT_LEARNING_SWEEP=on` the deployment starts a Learning run on each container every `OPENBOT_LEARNING_SWEEP_HOURS` (default 6), skipping containers with a run in flight; see [docs/automatic-learning.md](docs/automatic-learning.md).
+- **Optional trace export**: with `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY` and `LANGFUSE_BASE_URL` set, every headless turn emits one `openbot.turn` span to Langfuse over OTLP; unset variables mean nothing is sent; see [docs/TELEMETRY.md](docs/TELEMETRY.md).
 
 ## Bring your own agent
 

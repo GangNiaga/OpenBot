@@ -197,9 +197,16 @@ vendor); (5) contoh sebelum/lepas yang boleh dinilai pantas.
      ECC #1) + SKILL.md standard (sudah patuh).
    - Fase 4 (Platform): AG-UI Streams (reconnect/catch-up), Channels (Slack/Teams), HITL v2,
      analitik run (padanan Product Analytics), orkestrator pelbagai Bot (padanan kisah Nicky Fury).
-5. **Status semasa deployment** (rujuk `WAR-ROOM.md` untuk sejarah): **21 Bot, 8 pelayan MCP
-   aktif, 117 alat**, 4 panggilan vendor langsung disahkan (Composio, Exa, CoinGecko, Malaysia
-   Transit) pada 15 Nov 2026. `[DISAHKAN - panggilan langsung]`
+     Kemas kini 16 November 2026: trigger webhook Composio, learning sweep (`OPENBOT_LEARNING_SWEEP`)
+     dan eksport span Langfuse (`openbot.turn`) sudah dalam kod; corak orkestrator Nicky Fury
+     kini ada padanannya — **Pengarah Operasi** (supervisor Bot yang memecahkan kerja dan
+     mendelegasikan melalui handoff `bot.message`). AG-UI Streams reconnect/catch-up dan analitik
+     run kekal sebagai jurang.
+5. **Status semasa deployment** (rujuk `WAR-ROOM.md` untuk sejarah): **22 Bot, 8 pelayan MCP
+   aktif, 120 alat** (memori kini 7 alat — 4 memori + 3 kit RAG dokumen), 4 panggilan vendor
+   langsung disahkan (Composio, Exa, CoinGecko, Malaysia Transit) pada 15 Nov 2026; 16 Nov 2026
+   menambah trigger Composio (HMAC `x-composio-signature`), learning sweep, Langfuse, memori
+   hibrid RRF + `valid_at` + soft-delete, dan Pengarah Operasi. `[DISAHKAN - kod & bootstrap]`
 
 ---
 

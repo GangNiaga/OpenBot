@@ -103,7 +103,9 @@ Alat F&B baharu di pelayan MCP `malaysia` (semuanya baca sahaja, data tanam dari
 | `pelan_kandungan_fnb` | jenama, senario?, tema_musim? | kalendar 7 hari mengikut funnel tempatan |
 | `jawab_ulasan` | ulasan, penilaian?, jenama?, konteks? | balasan BM+EN, positif/negatif, garis merah |
 
-**Geran:** 21 Bot × 18 alat = **378 geran `mcp`** (bootstrap idempoten).
+**Geran:** 21 Bot × 18 alat = **378 geran `mcp`** (bootstrap idempoten). Sejak 16 November
+2026 roster 22 Bot dan pelayan `memori` (7 alat) turut digerankan — sasaran bootstrap kini
+22 Bot × 25 alat = **550 geran**.
 
 ## 6. Saluran Jabatan (9 jumlah)
 

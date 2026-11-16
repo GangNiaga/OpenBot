@@ -406,6 +406,20 @@ every deployment:
 - **Optional Langfuse tracing.** With `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY` and
   `LANGFUSE_BASE_URL` set, every headless turn emits one `openbot.turn` span (agent, thread,
   outcome, duration) to Langfuse over OTLP; unset variables mean nothing is constructed or sent.
+- **The Malaysia package's memory server recalls in hybrid, and carries documents.** `cari_memori`
+  fuses pgvector cosine with BM25 through reciprocal rank fusion, so a name or an exact term a
+  vector search missed is found again; every memory carries `valid_at`, so a Bot can answer as of a
+  past moment; `lupa_memori` soft-deletes by superseding instead of dropping the row; and three
+  document tools — `simpan_dokumen`, `cari_dokumen` and `padam_dokumen` — chunk, embed and retrieve
+  documents beside the facts. The example's schema upgrades itself on the first tool call, and
+  `examples/malaysia/bootstrap.ts` grants the three new tools to every Bot.
+- **The Malaysia package gains Pengarah Operasi, a supervisor Bot.** It takes a task, splits it
+  into parts, hands each part to the specialist Bot through the `message_bot` handoff (the
+  `bot.message` work-item kind, one call per part with `bot`, `task`, `constraints` and
+  `expecting`), stays inside the platform's handoff depth and count bounds, and reports back what
+  is done, what is still pending and what needs approval. It is the thirteenth Bot of the
+  organisasi chart — the package's roster is 22 — and `war-pack/skills/pengarah-operasi/SKILL.md`
+  carries the open-standard copy.
 - **The curated catalogue adds CoinGecko and Malaysia Transit.** Both connect without a key:
   CoinGecko serves crypto market tools (prices, charts, trending, news) and Malaysia Transit
   serves Malaysian transit tools (stop arrivals, fares, journey planning across KTM, RapidKL,

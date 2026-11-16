@@ -8,13 +8,18 @@
 > **LAMBAKAN F&B (November 2025):** 9 Bot F&B baharu (Pengarah F&B, Chef Eksekutif,
 > Pengurus Operasi, + 6 Ejen: Prospek, Pemasaran AI, Kandungan, Emel, Suara, CRM), 5
 > kemahiran F&B, 5 alat F&B baharu (jumlah 18 alat) dan 6 saluran (jumlah 9) — berdasarkan
-> deep research DOSM/MySST. Dokumen induk F&B: **FNB-PLAYBOOK.md**. Roster kini 21 Bot,
+> deep research DOSM/MySST. Dokumen induk F&B: **FNB-PLAYBOOK.md**. Roster ketika itu 21 Bot,
 > geran 378.
 
-> **STATUS SEMASA (15 November 2026):** Nombor dalam dokumen ini adalah rekod research
-> November 2025. Deployment semasa kini berjalan dengan **21 Bot, 8 pelayan MCP, 117 alat**.
-> Rujuk **ECOSYSTEM-RESEARCH.md** untuk research ekosistem terkini — dokumen ini kekal
-> sebagai rekod sejarah.
+> **STATUS SEMASA (16 November 2026):** Nombor dalam dokumen ini adalah rekod research
+> November 2025. Deployment semasa kini berjalan dengan **22 Bot, 8 pelayan MCP, 120 alat**
+> (pelayan `malaysia` kini 18 alat, `memori` kini 7 alat — 4 memori + 3 kit RAG dokumen).
+> Penyeliaan: **Pengarah Operasi** (Bot ke-13 carta organisasi) memecahkan tugasan dan
+> mendelegasikan melalui handoff `bot.message` — lihat **seksyen 10**. Platform menyusul
+> pada 16 November 2026: trigger webhook Composio (HMAC `x-composio-signature`, dedup
+> `log_id`), learning sweep (`OPENBOT_LEARNING_SWEEP`), dan eksport span Langfuse
+> (`openbot.turn`). Rujuk **ECOSYSTEM-RESEARCH.md** untuk research ekosistem terkini —
+> dokumen ini kekal sebagai rekod sejarah.
 
 ---
 
@@ -179,3 +184,22 @@ curl http://127.0.0.1:3001/api/agents | jq '.agents | length'
 - Hacker News/Reddit 2025-2026: kesan konteks, MCP Streamable HTTP, keselamatan MCP,
   standard kemahiran SKILL.md (agentskills.io), pakej `anthropics/skills`
 - Detail penuh: `war-pack/MCP-WAR-PACK.md`
+
+## 10. Pengarah Operasi — Penyelia Pusat (16 November 2026)
+
+Bot ke-13 carta organisasi (`agents.yaml`, id `pengarah-operasi`): terima satu tugasan
+merentasi kepakaran, **pecahkan** kepada bahagian kecil (senarai pembahagian ditulis terbuka),
+**delegasikan** setiap bahagian kepada Bot pakar, **konsolidasikan** balasan, dan laporkan
+balik dengan status jujur: APA YANG SIAP / TERTANGGUH / PERLU KELULUSAN.
+
+- **Cara delegasi:** handoff `bot.message` — alat `message_bot` dengan medan penuh `bot`
+  (nama Bot dalam roster), `task`, `constraints` dan `expecting`; SATU panggilan per bahagian.
+  Sempadan kedalaman dan bilangan handoff per run dikuatkuasakan platform
+  (`server/src/agents/handoff-tool.ts`); bila sempadan dicapai, bahagian itu disiapkan
+  sendiri dan ditanda "tidak didelegasikan" — tiada pusingan sempadan.
+- **Jejak:** status tugasan besar merentas thread disimpan ke memori jangka panjang
+  (`memori/simpan_memori`, semak semula dengan `cari_memori`).
+- **Cara deploy:** sudah dalam `agents.yaml` — restart pelayan supaya pakej tenant
+  disegerak, dan jalankan `bun examples/malaysia/bootstrap.ts` untuk geran memori
+  (sasaran kini 22 Bot x 25 alat = 550). Cermin standard terbuka:
+  `war-pack/skills/pengarah-operasi/SKILL.md`.

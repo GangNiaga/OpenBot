@@ -764,13 +764,21 @@ export const CATALOGUE: readonly CatalogueEntry[] = Object.freeze([
     summary:
       "Memori jangka panjang deployment ini di pgvector: simpan fakta, keutamaan dan peristiwa " +
       "tentang pengguna, cari semula dengan carian makna merentas thread, lupa yang salah, dan " +
-      "bilang simpanan. Embedding NVIDIA (fallback hash tempatan), jadual memori_malaysia di Supabase.",
+      "bilang simpanan. Ingatan hibrid (vektor + BM25) dengan soalan as-of valid_at, dan RAG " +
+      "dokumen: simpan, cari dan padam dokumen. Embedding NVIDIA (fallback hash tempatan), " +
+      "jadual memori_malaysia di Supabase.",
     personalSummary:
-      "Memori jangka panjang anda: fakta dan keutamaan disimpan, dicari semula dengan carian makna.",
+      "Memori jangka panjang anda: fakta dan keutamaan disimpan, dicari semula dengan carian " +
+      "makna, dan dokumen boleh disimpan serta dicari.",
     host: "http://127.0.0.1:4211",
     path: "/mcp",
     auth: { kind: "none" },
-    writeTools: Object.freeze(["simpan_memori", "lupa_memori"]),
+    writeTools: Object.freeze([
+      "simpan_memori",
+      "lupa_memori",
+      "simpan_dokumen",
+      "padam_dokumen",
+    ]),
     docsUrl:
       "https://github.com/CopilotKit/OpenBot/blob/main/examples/malaysia/memori/server.ts",
   },
