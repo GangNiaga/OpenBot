@@ -8,6 +8,23 @@ Deployment semasa turut menjalankan 7 pelayan lain daripada katalog terkurasi �
 `malaysiatransit`, `composio`, `exa`, `firecrawl`, `routines`, `memori` — dengan 117 alat
 keseluruhan. Rujuk `../../../docs/architecture.md` dan `../ECOSYSTEM-RESEARCH.md`.
 
+## Pelayan saudara: memori (port 4211)
+
+Pelayan MCP "memori" (`../memori/server.ts`, `http://127.0.0.1:4211/mcp`) ialah memori
+jangka panjang pgvector untuk semua Bot pakej ini, dengan 7 alat. Bermula Nov 2026 cariannya
+hibrid penuh: kedudukan vektor cosine (50 kandidat teratas) digabungkan dengan kedudukan
+leksikal BM25 (k1=1.2, b=0.75) melalui Reciprocal Rank Fusion — skor =
+1/(60+rank_vektor) + 1/(60+rank_leksikal) — supaya soalan berunsur nama/istilah literal tidak
+lagi terlepas. Setiap baris kini membawa `valid_at` (bila fakta mula benar; `cari_memori`
+terima momen opsyen untuk semantik "sebagaimana pada masa itu"), dan `lupa_memori` ialah
+padam lembut — `superseded_at` ditandakan, bukan baris dihapus. Tiga alat dokumen RAG baharu:
+`simpan_dokumen` (pecah teks kepada cebisan ~700-900 aksara pada sempadan perenggan, embed
+setiap cebisan sebagai kind='doc_chunk'), `cari_dokumen` (hibrid sama; pulangkan cebisan
+bersama tajuk dokumen) dan `padam_dokumen` (lupakan semua cebisan sesuatu tajuk). Skema naik
+taraf di tempat melalui CREATE/ALTER TABLE IF NOT EXISTS pada larian alat pertama — tiada
+migrasi manual — dan geran alat baharu disasarkan oleh `examples/malaysia/bootstrap.ts`
+(`ALAT_MEMORI`).
+
 ## Penggunaan dalam sandbox ini
 
 Pelayan berjalan sebagai mini-service berasingan:

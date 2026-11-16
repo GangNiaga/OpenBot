@@ -18,6 +18,7 @@ import { type AuditStore, recordAuditEvent } from "../audit";
 import {
   linearTimestampFresh,
   verifyBearer,
+  verifyComposioSignature,
   verifyGithubSignature,
   verifyLinearSignature,
   verifyPagerDutySignature,
@@ -384,6 +385,43 @@ export function createTriggerIngressRoutes(deps: TriggerIngressDeps) {
             reason: "ping",
           });
         return deliver({ deliveryId, type, payload });
+      }
+      case "composio": {
+        if (
+          !verifyComposioSignature(
+            raw,
+            {
+              id: header("webhook-id"),
+              timestamp: header("webhook-timestamp"),
+              signature: header("webhook-signature"),
+              composio: header("x-composio-signature"),
+            },
+            trigger.secret,
+            Math.floor(now() / 1000),
+          )
+        )
+          return unauthorized();
+        const payload = parseObject(raw);
+        if (!payload)
+          return context.json(
+            { error: "Composio event is not valid JSON." },
+            400,
+          );
+        // Composio carries `log_id`, sometimes nested under `payload`; one log_id is one delivery,
+        // so a redelivery (even re-serialized) dedupes instead of running again. Without one, a
+        // replay of the same signed body still does.
+        const nested = payload.payload as Record<string, unknown> | undefined;
+        const deliveryId =
+          str(payload.log_id) ?? str(nested?.log_id) ?? signedBodyId(raw);
+        return deliver({
+          deliveryId,
+          type:
+            str(payload.triggerName) ??
+            str(payload.type) ??
+            str(payload.event) ??
+            "received",
+          payload,
+        });
       }
     }
   });

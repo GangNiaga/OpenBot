@@ -14,6 +14,9 @@
  *  - Standard Webhooks (generic webhook HMAC mode): `webhook-signature: v1,<base64 HMAC-SHA256(
  *    base64decode(secret without whsec_), "{webhook-id}.{webhook-timestamp}.{body}")>` space
  *    separated; timestamp within five minutes (https://www.standardwebhooks.com/).
+ *  - Composio managed triggers: the Standard Webhooks trio when Composio sends it, or
+ *    `x-composio-signature: [sha256=]<hex HMAC-SHA256(secret, raw body)>` keyed with the secret
+ *    itself. Either one passing authenticates the delivery.
  */
 import { createHmac, timingSafeEqual } from "node:crypto";
 
@@ -127,6 +130,36 @@ export function verifyStandardWebhook(
     if (safeEqual(supplied, expected)) matched = true;
   }
   return matched;
+}
+
+/**
+ * Composio signs a managed trigger delivery the Standard Webhooks way when it sends the trio
+ * (`webhook-id`, `webhook-timestamp`, `webhook-signature`), and an `x-composio-signature` carries a
+ * hex (`sha256=`-prefixed allowed) HMAC-SHA256 of the raw body keyed with the secret itself. Either
+ * one passing authenticates; a Standard Webhooks signature that fails its freshness window still
+ * lets a valid `x-composio-signature` through. Absent or unparseable headers refuse the delivery.
+ */
+export function verifyComposioSignature(
+  raw: string,
+  headers: {
+    id?: string;
+    timestamp?: string;
+    signature?: string;
+    composio?: string;
+  },
+  secret: string,
+  nowSeconds = Math.floor(Date.now() / 1000),
+): boolean {
+  if (
+    headers.signature &&
+    verifyStandardWebhook(secret, raw, headers, nowSeconds)
+  )
+    return true;
+  const match = /^(?:sha256=)?([0-9a-f]{64})$/i.exec(
+    headers.composio?.trim() ?? "",
+  );
+  const supplied = match?.[1] ? fromHex(match[1]) : null;
+  return !!supplied && safeEqual(supplied, hexHmac(secret, raw));
 }
 
 /** `Authorization: Bearer <secret>`, constant-time over digests so length is not revealed. */

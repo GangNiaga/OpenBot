@@ -506,6 +506,20 @@ export type DeploymentConfig = {
    * Off by default, so a fleet that already runs the CronJob buys nothing here.
    */
   routineSweepInProcess: boolean;
+  /**
+   * Whether this server periodically starts a Learning run on every container it knows.
+   *
+   * Learning otherwise runs when an administrator presses Learn now. The sweep is the automatic
+   * counterpart: every `OPENBOT_LEARNING_SWEEP_HOURS`, containers resolved from the Learning
+   * settings (the default container and each Bot's mapping) get a run started over whatever
+   * conversations finished since. Off by default: a deployment that reviews Learning by hand does
+   * not want runs appearing behind its back, and one that turns this on has several containers at
+   * most, so multiplying by replica count costs a skipped run rather than a double one (a run in
+   * flight holds its container, see learning/sweep.ts).
+   */
+  learningSweep: boolean;
+  /** How many hours between Learning sweeps, from `OPENBOT_LEARNING_SWEEP_HOURS`, at least 1. */
+  learningSweepHours: number;
 };
 
 type Environment = Record<string, string | undefined>;
@@ -1737,6 +1751,8 @@ export function loadConfig(
       : {}),
     ...(workerSharedSecret ? { workerSharedSecret } : {}),
     routineSweepInProcess: environment.OPENBOT_ROUTINE_SWEEP_IN_PROCESS?.trim() === "on",
+    learningSweep: environment.OPENBOT_LEARNING_SWEEP?.trim() === "on",
+    learningSweepHours: learningSweepHours(environment),
   };
   // Read once the rest has been, so a deployment missing something more basic is told that first.
   const config: DeploymentConfig = {
@@ -1824,6 +1840,21 @@ function recorderExtraExtensionIds(environment: Environment): string[] {
       );
   }
   return ids;
+}
+
+/**
+ * The hours between Learning sweeps, from `OPENBOT_LEARNING_SWEEP_HOURS`.
+ *
+ * A number that is not a whole one, or one below 1, is clamped to the nearest useful value rather
+ * than refused: a sweep that starts runs is background work, and a typo in it should not keep a
+ * deployment from booting. Unset means 6.
+ */
+function learningSweepHours(environment: Environment): number {
+  const raw = optional(environment, "OPENBOT_LEARNING_SWEEP_HOURS");
+  if (raw === undefined) return 6;
+  const hours = Number(raw);
+  if (!Number.isFinite(hours)) return 6;
+  return Math.max(1, Math.floor(hours));
 }
 
 /** On unless the variable is "false" or "0", the rule every default-on switch here follows. */

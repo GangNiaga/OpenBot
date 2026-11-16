@@ -41,6 +41,9 @@ import { type ResponsibilityStore, whyItRepeats } from "./types";
  */
 export function createServerResponsibilityEngine(deps: {
   productTelemetry?: import("../telemetry/product").ProductTelemetry;
+  traceTurn?: Parameters<
+    typeof createTurnRunner
+  >[0]["traceTurn"];
   database: Database;
   responsibilityStore: ResponsibilityStore;
   routineIntelligence: IntelligenceLike;
@@ -94,6 +97,7 @@ export function createServerResponsibilityEngine(deps: {
                 onKnownStop: deps.productTelemetry.stopKnown,
               }
             : {}),
+          ...(deps.traceTurn ? { traceTurn: deps.traceTurn } : {}),
           admission: serverTurnAdmission,
           intelligence: routineIntelligence,
           runner: routineAgentRunner,

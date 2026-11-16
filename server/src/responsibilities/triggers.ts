@@ -37,6 +37,7 @@ export const triggerKinds = [
   "linear",
   "sentry",
   "pagerduty",
+  "composio",
   "email",
   "slack",
 ] as const;
@@ -54,6 +55,7 @@ const SECRET_KINDS: ReadonlySet<TriggerKind> = new Set([
   "linear",
   "sentry",
   "pagerduty",
+  "composio",
 ]);
 
 const shortText = (maximum: number) => z.string().trim().min(1).max(maximum);
@@ -119,6 +121,12 @@ export const triggerConfigSchema = z.discriminatedUnion("kind", [
   z
     .object({
       kind: z.literal("pagerduty"),
+      filter: triggerFilterSchema.default({ eventTypes: [] }),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal("composio"),
       filter: triggerFilterSchema.default({ eventTypes: [] }),
     })
     .strict(),
@@ -555,7 +563,7 @@ export function createTriggerStore(
     },
     /**
      * Rotate: a new generated secret for webhook/GitHub, or the vendor's new pasted secret for
-     * Linear/Sentry/PagerDuty. The old credential is revoked in the same transaction.
+     * Linear/Sentry/PagerDuty/Composio. The old credential is revoked in the same transaction.
      */
     async setSecret(
       ownerUserId: string,

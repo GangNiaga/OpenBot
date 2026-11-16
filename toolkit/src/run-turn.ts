@@ -118,6 +118,20 @@ export type TurnRunner = (input: {
   skill?: string;
 }) => Promise<{ replyText: string; components?: DrawnComponent[] }>;
 
+/**
+ * The span one turn leaves, as the host records it.
+ *
+ * A port, not a dependency: the toolkit traces nothing itself (it runs without the server, and
+ * depends on @ag-ui, rxjs and zod only), so the host wires an exporter through
+ * `createTurnRunner`'s `traceTurn` — the server's is telemetry/langfuse.ts — and tests pass
+ * nothing, which records nothing. `setAttribute` names one attribute after the fact; `end` closes
+ * the span exactly once and must never throw, because it runs on the way out of every turn.
+ */
+export type TurnSpan = {
+  setAttribute: (key: string, value: string | number | boolean) => void;
+  end: () => void;
+};
+
 /** A display component the Bot drew in a turn and the server allowed, with the props it drew. */
 export type DrawnComponent = { name: string; args: Record<string, unknown> };
 
@@ -735,6 +749,11 @@ export function createTurnRunner(options: {
     runId: string,
     outcome: "cancelled" | "timeout",
   ) => Promise<void>;
+  /** One span per turn, from the run's start to its outcome. Absent records nothing. */
+  traceTurn?: (
+    name: string,
+    attributes: Record<string, string | number | boolean>,
+  ) => TurnSpan;
 }): TurnRunner {
   const {
     intelligence,
@@ -1029,6 +1048,21 @@ export function createTurnRunner(options: {
       },
     });
 
+    /*
+     * One span per turn, through the port the host passed. Started only now — the lock is held, the
+     * run is about to be asked for — so it can end exactly once, at the outcome decided below, on
+     * every path between here and there: the run's own failures are caught into `failed`, and
+     * nothing else in between throws. A turn that never got this far (a refused admission, a lock
+     * that could not be taken) throws to the caller before any span began, and is the caller's log,
+     * not a trace.
+     */
+    const turnSpan = options.traceTurn?.("openbot.turn", {
+      "openbot.agent_id": agentId,
+      "openbot.thread_id": threadId,
+      "openbot.run_id": runId,
+    });
+    const turnStartedAt = Date.now();
+
     try {
       const cancelled = new Promise<never>((_resolve, reject) => {
         cancelTurn = () => {
@@ -1166,6 +1200,9 @@ export function createTurnRunner(options: {
       pendingInterrupts: agent.pendingInterrupts,
       componentNames: components?.names ?? new Set(),
     });
+    turnSpan?.setAttribute("openbot.outcome", outcome.kind);
+    turnSpan?.setAttribute("openbot.duration_ms", Date.now() - turnStartedAt);
+    turnSpan?.end();
     return conclude(outcome, stopPromise, turnTimeoutMs);
   };
 }

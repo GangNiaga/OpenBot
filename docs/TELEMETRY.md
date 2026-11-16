@@ -42,6 +42,10 @@ PostHog joins consumption to terminal execution through scoped user, deployment,
 
 Tool/activity-only outputs, nested code/table copy controls, native mobile and external-channel consumption remain outside this UI coverage. The notification sheet is an approval/question inbox with no delivered-result open action, so a bell click emits no result-open event. Existing feedback behavior is unchanged and has no new product analytics event.
 
+## Optional Langfuse trace export
+
+Independent of product telemetry, a deployment may export traces of its headless turns to Langfuse by setting `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY` and `LANGFUSE_BASE_URL`; all three are required, and `OPENBOT_OTEL_EXPORT=off` turns the export off with them still set. Off by default, and a complete no-op when off: nothing is constructed at boot and no span is created. When on, each headless turn — a routine, check-in, follow-up, subagent or Bot-to-Bot hop — leaves one `openbot.turn` span carrying agent, thread and run identifiers, the turn's outcome and its duration; nothing a person said is in a span. Spans go out as OTLP/HTTP protobuf to `<base URL>/api/public/otel/v1/traces` under a basic-auth header built from the two keys, batched, and are best effort like every other export here: an unreachable Langfuse drops spans, and the audit trail stays the record of truth.
+
 ## Delivery and reporting limits
 
 Sending is best effort through the existing transport. There is no local event journal, application-level telemetry retry, replay or exactly-once producer guarantee. Stable event IDs support deduplication in PostHog queries; physical sink/destination deduplication remains an external transport concern. Shared sender completion does not acknowledge destination receipt, and opt-out or unavailable transport can leave gaps.

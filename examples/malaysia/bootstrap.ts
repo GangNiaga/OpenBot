@@ -40,12 +40,16 @@ const ALAT_MALAYSIA = [
   "jawab_ulasan",
 ] as const;
 
-/** Alat pelayan "memori" (memori jangka panjang pgvector, port 4211). */
+/** Alat pelayan "memori" (memori jangka panjang pgvector + RAG dokumen, port 4211). */
 const ALAT_MEMORI = [
   "simpan_memori",
   "cari_memori",
   "lupa_memori",
   "bilang_memori",
+  // Kit dokumen RAG (memori hibrid RRF + valid_at)
+  "simpan_dokumen",
+  "cari_dokumen",
+  "padam_dokumen",
 ] as const;
 
 /** Pelayan tempatan yang didaftar bootstrap, dengan port kesihatan dan senarai alatnya. */

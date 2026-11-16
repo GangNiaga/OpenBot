@@ -721,6 +721,25 @@ offers, and should be chosen rather than discovered. A Shared app moves the radi
 account to the team's: anyone the approval admits acts as that account. The approval and the
 ask-before-write rule are the narrowing.
 
+## Trigger webhooks
+
+Composio can also wake a goal. A `composio` event trigger on a goal gives a URL
+(`<public URL>/api/events/triggers/<trigger id>`) that Composio POSTs on each firing — Gmail's new
+email, a Calendar event, whatever the app's triggers deliver. Two pieces to set up: give Composio
+the URL, and paste the trigger's signing secret (`whsec_…` allowed) on the goal's card on the Bot's
+Routines page. Deliveries are refused until the secret is pasted, the same as every other signed
+vendor trigger.
+
+Composio signs each POST with HMAC-SHA256 over the raw body, and either header verifies it: the
+Standard Webhooks trio (`webhook-id`, `webhook-timestamp`, `webhook-signature`), or
+`x-composio-signature` carrying a hex digest (`sha256=`-prefixed allowed) keyed with the secret
+itself. A wrong or missing signature is refused with 401.
+
+One firing is one run. Each payload carries a `log_id` (sometimes nested under `payload`), and the
+delivery deduplicates on it, so Composio redelivering the same firing never runs the goal twice.
+The whole body stays the event payload, so the goal's filters (`eventTypes` such as
+`GMAIL_NEW_EMAIL`, one field equality) and the Bot itself read what Composio sent.
+
 ## Not built yet
 
 **Every write through a Shared app asks alike.** The ask-before-write rule on a Shared app asks

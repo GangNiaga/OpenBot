@@ -14,6 +14,7 @@ import {
 } from "../src/responsibilities/email";
 import {
   verifyBearer,
+  verifyComposioSignature,
   verifyGithubSignature,
   verifyLinearSignature,
   verifyPagerDutySignature,
@@ -117,6 +118,60 @@ describe("vendor signature schemes", () => {
       verifyPagerDutySignature(secret, body, `v1=${"0".repeat(64)}, v1=${hex}`),
     ).toBe(true);
     expect(verifyPagerDutySignature(secret, body, `v2=${hex}`)).toBe(false);
+  });
+  test("Composio: the Standard Webhooks trio or an x-composio-signature hex over the raw body", () => {
+    const secret = "composio-webhook-secret";
+    const body = '{"log_id":"log-1","payload":{"subject":"hi"}}';
+    const hex = opensslHmacHex(secret, body);
+    expect(hex).toMatch(/^[0-9a-f]{64}$/);
+    expect(verifyComposioSignature(body, { composio: hex }, secret)).toBe(true);
+    expect(
+      verifyComposioSignature(body, { composio: `sha256=${hex}` }, secret),
+    ).toBe(true);
+    // A Standard Webhooks signature past its window still lets a valid x-composio-signature through.
+    const whsec = "whsec_c2VjcmV0LWZpeHR1cmUtb25seQ==";
+    const trio = {
+      id: "msg_1",
+      timestamp: "1614265330",
+      signature: `v1,${createHmac(
+        "sha256",
+        Buffer.from("c2VjcmV0LWZpeHR1cmUtb25seQ==", "base64"),
+      )
+        .update(`msg_1.1614265330.${body}`)
+        .digest("base64")}`,
+    };
+    expect(verifyComposioSignature(body, trio, whsec, 1_614_265_330)).toBe(
+      true,
+    );
+    const stale = { ...trio, timestamp: "1614260000" };
+    expect(
+      verifyComposioSignature(
+        body,
+        {
+          ...stale,
+          composio: createHmac("sha256", whsec).update(body).digest("hex"),
+        },
+        whsec,
+        1_614_265_330,
+      ),
+    ).toBe(true);
+    expect(verifyComposioSignature(body, stale, whsec, 1_614_265_330)).toBe(
+      false,
+    );
+    // A changed byte, a wrong key, and every absent or unparseable header refuse.
+    expect(verifyComposioSignature(`${body} `, { composio: hex }, secret)).toBe(
+      false,
+    );
+    expect(
+      verifyComposioSignature(body, { composio: hex }, `${secret}-wrong`),
+    ).toBe(false);
+    expect(
+      verifyComposioSignature(body, { composio: "0".repeat(64) }, secret),
+    ).toBe(false);
+    expect(
+      verifyComposioSignature(body, { composio: "sha256=not-hex" }, secret),
+    ).toBe(false);
+    expect(verifyComposioSignature(body, {}, secret)).toBe(false);
   });
   test("bearer compares the whole token", () => {
     expect(verifyBearer("whsec_abc", "Bearer whsec_abc")).toBe(true);
@@ -412,6 +467,70 @@ describe("provider ingress", () => {
     expect(
       (await post(body, { "x-pagerduty-signature": "v1=00" })).status,
     ).toBe(401);
+  });
+  test("Composio: hex or Standard Webhooks signature, log_id dedup, whole body as payload", async () => {
+    const secret = "whsec_c2VjcmV0LWZpeHR1cmUtb25seQ==";
+    const { events, post } = ingress(
+      trigger(parseTriggerConfig({ kind: "composio" })),
+    );
+    const sign = (raw: string) =>
+      createHmac("sha256", secret).update(raw).digest("hex");
+    const body = JSON.stringify({
+      log_id: "log-1",
+      triggerName: "GMAIL_NEW_EMAIL",
+      payload: { subject: "Hello" },
+    });
+    expect(
+      (await post(body, { "x-composio-signature": sign(body) })).status,
+    ).toBe(200);
+    expect(events[0]).toMatchObject({
+      type: "GMAIL_NEW_EMAIL",
+      source: "composio",
+      externalId: `${TRIGGER_ID}:log-1`,
+      payload: { payload: { subject: "Hello" } },
+    });
+    // A log_id nested under `payload` names the delivery too.
+    const nested = JSON.stringify({
+      triggerName: "GMAIL_NEW_EMAIL",
+      payload: { log_id: "log-2" },
+    });
+    expect(
+      (
+        await post(nested, {
+          "x-composio-signature": `sha256=${sign(nested)}`,
+        })
+      ).status,
+    ).toBe(200);
+    expect(events[1]?.externalId).toBe(`${TRIGGER_ID}:log-2`);
+    // The Standard Webhooks trio verifies with the same whsec_ secret.
+    const timestamp = String(NOW / 1000);
+    const trio = JSON.stringify({ log_id: "log-3" });
+    expect(
+      (
+        await post(trio, {
+          "webhook-id": "msg_1",
+          "webhook-timestamp": timestamp,
+          "webhook-signature": `v1,${createHmac(
+            "sha256",
+            Buffer.from("c2VjcmV0LWZpeHR1cmUtb25seQ==", "base64"),
+          )
+            .update(`msg_1.${timestamp}.${trio}`)
+            .digest("base64")}`,
+        })
+      ).status,
+    ).toBe(200);
+    expect(events[2]?.externalId).toBe(`${TRIGGER_ID}:log-3`);
+    // A wrong signature never queues, and a redelivered log_id names the same event for the store
+    // to dedupe on.
+    expect(
+      (await post(body, { "x-composio-signature": "0".repeat(64) })).status,
+    ).toBe(401);
+    const replay = JSON.stringify({ log_id: "log-1", extra: true });
+    const again = await post(replay, {
+      "x-composio-signature": sign(replay),
+    });
+    expect(again.status).toBe(200);
+    expect(events[3]?.externalId).toBe(`${TRIGGER_ID}:log-1`);
   });
   test("GitHub: repository lock and event.action type", async () => {
     const secret = "gh-secret";

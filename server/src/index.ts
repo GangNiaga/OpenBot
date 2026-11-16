@@ -230,6 +230,7 @@ import {
   createLearningSharingStore,
   createOpenSkillIndex,
 } from "./learning/sharing";
+import { createLearningSweep } from "./learning/sweep";
 import { createMemoryDefaults } from "./memory/defaults";
 import { createMemoryIngestion } from "./memory/ingestion";
 import { createIntelligenceMemory } from "./memory/intelligence";
@@ -346,6 +347,7 @@ import { createTaskRunner } from "./tasks/runner";
 import { createTaskStore } from "./tasks/store";
 import { createTaskTurn } from "./tasks/turn";
 import { createTeamBots } from "./team-bots/team-bots";
+import { createLangfuseTracing } from "./telemetry/langfuse";
 import { createProductTelemetry } from "./telemetry/product";
 import {
   deliveryLineage,
@@ -362,7 +364,7 @@ import { createUserPreferencesStore } from "./user-preferences";
 import { createVoiceSessionStore } from "./voice/sessions";
 import { createVoiceSummarizer } from "./voice/summary";
 import { readAuditEvent, readWhatIfVocabulary } from "./what-if";
-import { repeatAfterEach } from "./work/loop";
+import { repeatAfterEach, type Repeating } from "./work/loop";
 import { createWorkQueue, type WorkOfferedListener } from "./work/queue";
 
 const config = loadConfig();
@@ -383,6 +385,17 @@ const productTelemetry = await createProductTelemetry({
   deploymentId: config.deploymentId,
 });
 addAuditTap(productTelemetry.recordAudit);
+/*
+ * Langfuse traces, when the deployment names Langfuse: one span per headless turn, through the
+ * `traceTurn` port each turn runner below takes. Off, and a complete no-op, unless all three
+ * `LANGFUSE_*` variables are set (telemetry/langfuse.ts) — nothing is constructed, nothing flushed,
+ * and every span is the no-op the port itself answers with.
+ */
+const langfuse = createLangfuseTracing();
+if (langfuse)
+  console.info(
+    JSON.stringify({ type: "langfuse-trace-export", enabled: true }),
+  );
 const prepareProductRunInput = productHeadlessBoundary(productTelemetry);
 const profileStore = createProfileStore(database);
 // Every dispatch point asks this database whether its person paused the Bot. See agents/lifecycle.ts.
@@ -2145,6 +2158,8 @@ const routineRunner = createRoutineRunner({
   runTurn: createTurnRunner({
     prepareRunInput: prepareProductRunInput,
     onKnownStop: productTelemetry.stopKnown,
+    // One span per turn, when Langfuse is configured (telemetry/langfuse.ts); absent otherwise.
+    traceTurn: langfuse?.turnSpan,
     admission: serverTurnAdmission,
     intelligence: routineIntelligence,
     runner: routineAgentRunner,
@@ -2247,6 +2262,8 @@ const subagents = createSubagents({
   turn: {
     prepareRunInput: prepareProductRunInput,
     onKnownStop: productTelemetry.stopKnown,
+    // One span per turn, when Langfuse is configured (telemetry/langfuse.ts); absent otherwise.
+    traceTurn: langfuse?.turnSpan,
     admission: serverTurnAdmission,
     intelligence: routineIntelligence,
     runner: routineAgentRunner,
@@ -2391,6 +2408,7 @@ const skillIn = async (containerId: string, name: string) => {
 
 const responsibilityEngine = createServerResponsibilityEngine({
   productTelemetry,
+  traceTurn: langfuse?.turnSpan,
   database,
   responsibilityStore,
   routineIntelligence,
@@ -2433,6 +2451,8 @@ const responsibilityAnswerTurn = ({
   return createTurnRunner({
     prepareRunInput: prepareProductRunInput,
     onKnownStop: productTelemetry.stopKnown,
+    // One span per turn, when Langfuse is configured (telemetry/langfuse.ts); absent otherwise.
+    traceTurn: langfuse?.turnSpan,
     admission: serverTurnAdmission,
     intelligence: routineIntelligence,
     runner: routineAgentRunner,
@@ -2515,6 +2535,8 @@ const executeApprovedAction = createApprovedActionExecutor({
 const approvalContinuationRunner = createTurnRunner({
   prepareRunInput: prepareProductRunInput,
   onKnownStop: productTelemetry.stopKnown,
+  // One span per turn, when Langfuse is configured (telemetry/langfuse.ts); absent otherwise.
+  traceTurn: langfuse?.turnSpan,
   admission: serverTurnAdmission,
   intelligence: routineIntelligence,
   runner: routineAgentRunner,
@@ -2549,6 +2571,8 @@ const groupConversations = createGroupConversations({
   runTurn: createTurnRunner({
     prepareRunInput: prepareProductRunInput,
     onKnownStop: productTelemetry.stopKnown,
+    // One span per turn, when Langfuse is configured (telemetry/langfuse.ts); absent otherwise.
+    traceTurn: langfuse?.turnSpan,
     admission: serverTurnAdmission,
     intelligence: routineIntelligence,
     runner: routineAgentRunner,
@@ -2756,6 +2780,8 @@ const proactiveEngine = createProactiveEngine({
   runTurn: createTurnRunner({
     prepareRunInput: prepareProductRunInput,
     onKnownStop: productTelemetry.stopKnown,
+    // One span per turn, when Langfuse is configured (telemetry/langfuse.ts); absent otherwise.
+    traceTurn: langfuse?.turnSpan,
     admission: serverTurnAdmission,
     intelligence: routineIntelligence,
     runner: routineAgentRunner,
@@ -2812,6 +2838,8 @@ const wakeUpRunner = createWakeUpRunner({
   runTurn: createTurnRunner({
     prepareRunInput: prepareProductRunInput,
     onKnownStop: productTelemetry.stopKnown,
+    // One span per turn, when Langfuse is configured (telemetry/langfuse.ts); absent otherwise.
+    traceTurn: langfuse?.turnSpan,
     admission: serverTurnAdmission,
     intelligence: routineIntelligence,
     runner: routineAgentRunner,
@@ -2871,6 +2899,36 @@ const deliverySweeps = DELIVERY_WORK_KINDS.map((kind) =>
     }
   }, 2_000),
 );
+
+/*
+ * Learning, kept up on its own: every few hours, a Learning run on each container the Learning
+ * settings name, started through the same `manage.startLearningRun` an administrator's Learn now
+ * uses (learning/sweep.ts). Gated on `OPENBOT_LEARNING_SWEEP=on` rather than always-on, because
+ * runs an administrator did not ask for are the opposite of what a deployment that reviews Learning
+ * by hand wants. The run list itself is the guard: a container with a run still working is skipped
+ * this pass, so two replicas sweeping the same hours — or an administrator pressing Learn now
+ * mid-pass — cannot start the same run twice.
+ */
+let learningSweepTimer: Repeating | undefined;
+if (config.learningSweep) {
+  const learningSweep = createLearningSweep({
+    // The runtime key's own Learning client, the same one the admin routes take.
+    manage: learningProbeIntelligence.experimental.learning,
+    readSettings: () => learningSettingsStore.read(),
+    audit: bootAuditStore,
+  });
+  learningSweepTimer = repeatAfterEach(
+    () => learningSweep.sweep(),
+    config.learningSweepHours * 3_600_000,
+  );
+  console.info(
+    JSON.stringify({
+      type: "learning-sweep",
+      enabled: true,
+      everyHours: config.learningSweepHours,
+    }),
+  );
+}
 
 const personResponseOwner = workOwner("person-response");
 const groupSweep = repeatAfterEach(async () => {
@@ -3485,9 +3543,12 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
     recorderExpirySweep.stop();
     if (firstAutoApproveSweep) clearTimeout(firstAutoApproveSweep);
     if (autoApproveTimer) clearInterval(autoApproveTimer);
+    if (learningSweepTimer) learningSweepTimer.stop();
     for (const sweep of deliverySweeps) sweep.stop();
     void Promise.allSettled([
       productTelemetry.flush(),
+      // Present only when the deployment named Langfuse; its last batch goes out with this.
+      langfuse?.shutdown() ?? Promise.resolve(),
       channelActivityListener.stop(),
       policyListener.stop(),
       // Started only where handing work between Bots is switched on, so it is often not there.

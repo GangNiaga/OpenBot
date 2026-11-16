@@ -13,6 +13,7 @@ export const EVENT_SOURCE_LABEL: Record<Source, string> = {
   linear: "Linear",
   sentry: "Sentry",
   pagerduty: "PagerDuty",
+  composio: "Composio",
   email: "Email",
 };
 
@@ -70,6 +71,7 @@ const KNOWN: Partial<Record<Source, Record<string, string>>> = {
     "incident.acknowledged": "When a PagerDuty incident is acknowledged",
     "incident.resolved": "When a PagerDuty incident is resolved",
   },
+  composio: { received: "When a Composio app event arrives" },
   email: { received: "When an email arrives" },
   manual: { requested: "When you ask" },
 };

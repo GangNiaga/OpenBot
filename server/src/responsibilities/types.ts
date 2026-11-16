@@ -11,6 +11,7 @@ export const responsibilitySources = [
   "linear",
   "sentry",
   "pagerduty",
+  "composio",
   "email",
 ] as const;
 export type ResponsibilitySource = (typeof responsibilitySources)[number];

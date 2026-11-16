@@ -153,12 +153,14 @@ export const responsibilitySourceBindings = pgTable(
 
 /**
  * One authenticated way for events to reach one responsibility: a generic webhook, a provider
- * webhook (GitHub, Linear, Sentry, PagerDuty), an inbound email address, or a Slack listener.
+ * webhook (GitHub, Linear, Sentry, PagerDuty, Composio), an inbound email address, or a Slack
+ * listener.
  *
  * The id is the unguessable path segment (and email local part) the sender addresses. The signing
  * or bearer secret lives in the encrypted credential vault; `credentialId` is null until a provider
- * secret has been pasted (Linear, Sentry and PagerDuty generate theirs after the URL exists) and for
- * kinds that authenticate another way (email: SNS signatures; Slack: the pairing's own signature).
+ * secret has been pasted (Linear, Sentry, PagerDuty and Composio paste theirs after the URL exists)
+ * and for kinds that authenticate another way (email: SNS signatures; Slack: the pairing's own
+ * signature).
  */
 export const responsibilityTriggers = pgTable(
   "responsibility_triggers",

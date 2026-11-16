@@ -1,5 +1,6 @@
 import {
   IconBellRinging,
+  IconBolt,
   IconBrandGithub,
   IconBrandSlack,
   IconBug,
@@ -67,6 +68,7 @@ export const KIND_LABEL: Record<TriggerKind, string> = {
   linear: "Linear",
   sentry: "Sentry",
   pagerduty: "PagerDuty",
+  composio: "Composio",
   email: "Email",
   slack: "Slack",
 };
@@ -76,6 +78,7 @@ const KIND_ICON: Record<TriggerKind, typeof IconWebhook> = {
   linear: IconListCheck,
   sentry: IconBug,
   pagerduty: IconBellRinging,
+  composio: IconBolt,
   email: IconMail,
   slack: IconBrandSlack,
 };
@@ -90,6 +93,8 @@ const KIND_HELP: Record<TriggerKind, string> = {
     "In a Sentry internal integration, set the webhook URL, then paste the integration's client secret here.",
   pagerduty:
     "In PagerDuty, Integrations → Generic Webhooks (v3): set the URL, then paste the secret shown on creation here.",
+  composio:
+    "In Composio, point the trigger listener at this URL, then paste the webhook secret here. Composio signs every delivery; the same log_id is delivered once.",
   email: "Send or forward mail to this address to start a run.",
   slack:
     "Starts on Slack events this Bot receives. Messages sent before you added the trigger are ignored.",
@@ -98,6 +103,7 @@ const VENDOR_SECRET: ReadonlySet<TriggerKind> = new Set([
   "linear",
   "sentry",
   "pagerduty",
+  "composio",
 ]);
 const SLACK_MODE = {
   mention: "The Bot is mentioned",
@@ -523,6 +529,7 @@ function NewTriggerDialog({
     linear: "Issue.create, Comment",
     sentry: "issue.created, event_alert.triggered",
     pagerduty: "incident.triggered",
+    composio: "GMAIL_NEW_RECEIVED_TRIGGER",
     email: "received",
     slack: "",
   };

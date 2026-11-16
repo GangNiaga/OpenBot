@@ -394,6 +394,18 @@ every deployment:
 
 ### Smaller changes
 
+- **Composio app events can start runs.** A trigger of the new `composio` kind receives Composio's
+  trigger webhooks (Gmail, Calendar and other connected apps): the administrator points the
+  listener at the trigger's URL and pastes the webhook secret, Composio signs every delivery with
+  HMAC-SHA256 (`x-composio-signature`, or Standard Webhooks headers), a delivery the signature
+  does not verify is refused, and the same `log_id` delivered twice starts one run, not two.
+- **An optional learning sweep starts runs by itself.** With `OPENBOT_LEARNING_SWEEP=on` the
+  deployment starts a learning run for every Learning container every `OPENBOT_LEARNING_SWEEP_HOURS`
+  (default 6), skipping containers whose run is still in flight, so learned skill proposals keep
+  arriving without a person opening Learn now. Off by default.
+- **Optional Langfuse tracing.** With `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY` and
+  `LANGFUSE_BASE_URL` set, every headless turn emits one `openbot.turn` span (agent, thread,
+  outcome, duration) to Langfuse over OTLP; unset variables mean nothing is constructed or sent.
 - **The curated catalogue adds CoinGecko and Malaysia Transit.** Both connect without a key:
   CoinGecko serves crypto market tools (prices, charts, trending, news) and Malaysia Transit
   serves Malaysian transit tools (stop arrivals, fares, journey planning across KTM, RapidKL,

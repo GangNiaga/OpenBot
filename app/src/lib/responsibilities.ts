@@ -29,6 +29,7 @@ export type ResponsibilityRecord = {
       | "linear"
       | "sentry"
       | "pagerduty"
+      | "composio"
       | "email";
     eventType: string;
   }[];
@@ -170,6 +171,7 @@ export type TriggerKind =
   | "linear"
   | "sentry"
   | "pagerduty"
+  | "composio"
   | "email"
   | "slack";
 export type TriggerFilter = {
@@ -178,7 +180,7 @@ export type TriggerFilter = {
 };
 export type TriggerConfig =
   | {
-      kind: "webhook" | "linear" | "sentry" | "pagerduty";
+      kind: "webhook" | "linear" | "sentry" | "pagerduty" | "composio";
       filter: TriggerFilter;
     }
   | { kind: "github"; repository?: string; filter: TriggerFilter }
