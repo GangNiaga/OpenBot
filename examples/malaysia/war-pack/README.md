@@ -2,7 +2,7 @@
 
 ## Apa ini?
 
-War-pack ialah pemetaan 7 kemahiran pakej tenant Malaysia (`examples/malaysia/`) kepada standard terbuka **SKILL.md** ([agentskills.io](https://agentskills.io)). Setiap folder dalam `skills/` ialah skill kendiri yang boleh diimport ke mana-mana agen mematuhi standard itu tanpa mengubah kod OpenBot.
+War-pack ialah pemetaan kemahiran pakej tenant Malaysia (`examples/malaysia/`) kepada standard terbuka **SKILL.md** ([agentskills.io](https://agentskills.io)). Setiap folder dalam `skills/` ialah skill kendiri yang boleh diimport ke mana-mana agen mematuhi standard itu tanpa mengubah kod OpenBot.
 
 Skill di sini sudah patuh standard **SKILL.md** rasmi [`anthropics/skills`](https://github.com/anthropics/skills) (195.1k bintang, Nov 2026); research ekosistem terkini (top-5 skill komuniti GitHub) ada di **`../ECOSYSTEM-RESEARCH.md`**.
 
@@ -32,11 +32,14 @@ Sumber kebenaran (source of truth): **`examples/malaysia/skills.yaml`** — fail
 | `skills/analisis-data/` | `analisis-data` | Analisis set data terbuka Malaysia (anti-reka angka) |
 | `skills/lukis-carta/` | `lukis-carta` | Carta organisasi Mermaid yang disahkan |
 | `skills/hari-kelepasan/` | `hari-kelepasan` | Semak kelepasan am nasional untuk penjadualan |
+| `skills/cuaca-harian/` | `cuaca-harian` | Cuaca semasa + ramalan harian BM (Open-Meteo) untuk perancangan |
+| `skills/kadar-tukaran/` | `kadar-tukaran` | Kadar tukaran harian MYR + penukaran matawang (anggaran kos) |
+| `skills/waktu-solat/` | `waktu-solat` | Waktu solat rasmi JAKIM semua zon daerah (bulan semasa) |
 | `skills/pengarah-operasi/` | (Bot `pengarah-operasi`, `agents.yaml` — bukan slug skills.yaml) | Penyeliaan: pecah tugasan, delegasi handoff `bot.message`, konsolidasi + status jujur |
 
 ## Rujukan
 
-- `examples/malaysia/skills.yaml` — definisi 15 kemahiran pakej Malaysia (10 asal + 5 F&B, termasuk 2 meta-kemahiran).
+- `examples/malaysia/skills.yaml` — definisi 18 kemahiran pakej Malaysia (10 asal + 5 F&B + 3 cuaca/tukaran/solat, termasuk 2 meta-kemahiran).
 - `examples/malaysia/agents.yaml` — 22 Bot pakej (13 carta organisasi + 9 F&B), termasuk supervisor `pengarah-operasi`.
 - [agentskills.io](https://agentskills.io) — spesifikasi standard SKILL.md.
 - `MCP-WAR-PACK.md` — registry pelayan MCP disahkan (Research Nov 2025).

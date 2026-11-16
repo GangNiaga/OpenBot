@@ -782,6 +782,66 @@ export const CATALOGUE: readonly CatalogueEntry[] = Object.freeze([
     docsUrl:
       "https://github.com/CopilotKit/OpenBot/blob/main/examples/malaysia/memori/server.ts",
   },
+  {
+    // Local first-party weather server (examples/malaysia/cuaca/server.ts), pinned loopback,
+    // no credential. Every answer carries an Open-Meteo sourcing note; WMO weather codes are
+    // rendered in Bahasa Melayu before they reach the model. All three tools read.
+    key: "cuaca",
+    title: "Cuaca Malaysia",
+    vendor: "OpenBot (tempatan)",
+    summary:
+      "Cuaca semasa dan ramalan harian (sehingga 7 hari) untuk bandar Malaysia dan dunia, " +
+      "dalam Bahasa Melayu: suhu, rasa sebenar, kelembapan, angin, hujan dan kebarangkalian " +
+      "hujan, dengan geokod nama bandar automatik. Sumber terbuka Open-Meteo, tanpa kunci.",
+    personalSummary:
+      "Cuaca anda: semasa dan ramalan harian dalam Bahasa Melayu untuk bandar mana pun.",
+    host: "http://127.0.0.1:4212",
+    path: "/mcp",
+    auth: { kind: "none" },
+    writeTools: Object.freeze([]),
+    docsUrl:
+      "https://github.com/CopilotKit/OpenBot/blob/main/examples/malaysia/cuaca/server.ts",
+  },
+  {
+    // Local first-party currency server (examples/malaysia/tukaran/server.ts). Rates are the
+    // free exchangerate-api.com daily snapshot (~160 currencies, MYR included) - daily, not
+    // real-time, and every answer says so. All three tools read.
+    key: "tukaran",
+    title: "Kadar Tukaran MYR",
+    vendor: "OpenBot (tempatan)",
+    summary:
+      "Kadar pertukaran harian ~160 matawang (MYR disokong): kadar semasa matawang utama, " +
+      "penukaran jumlah dua matawang, dan senarai kod matawang. Data harian exchangerate-api " +
+      "dengan tarikh kemaskini dinyatakan - bukan kadar masa-nyata bank.",
+    personalSummary:
+      "Kadar tukaran: tukar MYR dan mana-mana matawang utama dengan anggaran harian.",
+    host: "http://127.0.0.1:4213",
+    path: "/mcp",
+    auth: { kind: "none" },
+    writeTools: Object.freeze([]),
+    docsUrl:
+      "https://github.com/CopilotKit/OpenBot/blob/main/examples/malaysia/tukaran/server.ts",
+  },
+  {
+    // Local first-party prayer-time server (examples/malaysia/solat/server.ts). Data is the
+    // official JAKIM monthly schedule through the keyless api.waktusolat.app mirror - current
+    // month only, honest about it, and pointing to e-solat for anything official. Both tools read.
+    key: "solat",
+    title: "Waktu Solat JAKIM",
+    vendor: "OpenBot (tempatan)",
+    summary:
+      "Waktu solat Malaysia dari jadual rasmi JAKIM (bulan semasa): Imsak, Subuh, Syuruk, " +
+      "Dhuha, Zohor, Asar, Maghrib dan Isyak untuk semua zon daerah, dengan carian kod zon " +
+      "mengikut negeri dan tarikh Hijrah.",
+    personalSummary:
+      "Waktu solat zon anda, dari jadual rasmi JAKIM, hari ini atau esok.",
+    host: "http://127.0.0.1:4214",
+    path: "/mcp",
+    auth: { kind: "none" },
+    writeTools: Object.freeze([]),
+    docsUrl:
+      "https://github.com/CopilotKit/OpenBot/blob/main/examples/malaysia/solat/server.ts",
+  },
 ]);
 
 const BY_KEY = new Map(CATALOGUE.map((entry) => [entry.key, entry]));

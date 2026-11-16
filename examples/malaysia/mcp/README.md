@@ -26,6 +26,23 @@ taraf di tempat melalui CREATE/ALTER TABLE IF NOT EXISTS pada larian alat pertam
 migrasi manual — dan geran alat baharu disasarkan oleh `examples/malaysia/bootstrap.ts`
 (`ALAT_MEMORI`).
 
+## Pelayan saudara: cuaca (4212), tukaran (4213), solat (4214)
+
+Tiga pelayan keyless tempatan yang sama bentuknya (StreamableHTTP stateless di `/mcp`,
+loopback sahaja, `readOnlyHint` pada setiap alat, degradasi jujur apabila sumber gagal):
+
+| Pelayan | Port | Sumber | Alat |
+| --- | --- | --- | --- |
+| `cuaca` (`../cuaca/server.ts`) | 4212 | Open-Meteo (terbuka, tanpa kunci) | `cari_lokasi`, `cuaca_semasa`, `ramalan_cuaca` — kod cuaca WMO diterjemah Bahasa Melayu |
+| `tukaran` (`../tukaran/server.ts`) | 4213 | exchangerate-api.com harian melalui open.er-api.com | `kadar_semasa`, `tukar_matawang`, `senarai_matawang` — ~160 matawang, MYR disokong, kadar harian bukan masa-nyata |
+| `solat` (`../solat/server.ts`) | 4214 | jadual JAKIM melalui api.waktusolat.app | `senarai_zon_solat`, `waktu_solat` — bulan semasa, semua zon daerah, tarikh Hijrah |
+
+Ketiga-tiganya didaftar dan digerankan oleh `examples/malaysia/bootstrap.ts` (`ALAT_CUACA`,
+`ALAT_TUKARAN`, `ALAT_SOLAT`) dan dilancarkan oleh `scripts/start-cloud.sh` pada but —
+degradasi lembut: satu pelayan yang gagal tidak menghalang yang lain. Kemahiran pakej
+`cuaca-harian`, `kadar-tukaran` dan `waktu-solat` (`skills.yaml` + cermin war-pack) membawa
+peraturan penggunaan mereka, termasuk rujukan rasmi MetMalaysia, BNM dan e-solat JAKIM.
+
 ## Penggunaan dalam sandbox ini
 
 Pelayan berjalan sebagai mini-service berasingan:

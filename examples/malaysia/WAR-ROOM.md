@@ -12,8 +12,11 @@
 > geran 378.
 
 > **STATUS SEMASA (16 November 2026):** Nombor dalam dokumen ini adalah rekod research
-> November 2025. Deployment semasa kini berjalan dengan **22 Bot, 8 pelayan MCP, 120 alat**
-> (pelayan `malaysia` kini 18 alat, `memori` kini 7 alat — 4 memori + 3 kit RAG dokumen).
+> November 2025. Deployment semasa kini berjalan dengan **22 Bot, 11 pelayan MCP, 128 alat**
+> (pelayan `malaysia` kini 18 alat, `memori` kini 7 alat — 4 memori + 3 kit RAG dokumen — dan
+> tiga pelayan keyless baharu: `cuaca` 3 alat Open-Meteo, `tukaran` 3 alat kadar tukaran MYR,
+> `solat` 2 alat waktu solat JAKIM, di port 4212-4214 dengan kemahiran `cuaca-harian`,
+> `kadar-tukaran` dan `waktu-solat`).
 > Penyeliaan: **Pengarah Operasi** (Bot ke-13 carta organisasi) memecahkan tugasan dan
 > mendelegasikan melalui handoff `bot.message` — lihat **seksyen 10**. Platform menyusul
 > pada 16 November 2026: trigger webhook Composio (HMAC `x-composio-signature`, dedup

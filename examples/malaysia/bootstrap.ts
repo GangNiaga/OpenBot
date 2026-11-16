@@ -52,11 +52,25 @@ const ALAT_MEMORI = [
   "padam_dokumen",
 ] as const;
 
-/** Pelayan tempatan yang didaftar bootstrap, dengan port kesihatan dan senarai alatnya. */
+/** Pelayan tempatan yang didaftar bootstrap, dengan port kesihatan dan senarai alatnya.
+ *  Cuaca, tukaran dan solat ialah pelayan keyless tempatan (4212-4214): degradasi lembut
+ *  seperti memori - satu pelayan yang gagal tidak menghalang pendaftaran yang lain. */
+const ALAT_CUACA = ["cari_lokasi", "cuaca_semasa", "ramalan_cuaca"] as const;
+const ALAT_TUKARAN = [
+  "kadar_semasa",
+  "tukar_matawang",
+  "senarai_matawang",
+] as const;
+const ALAT_SOLAT = ["senarai_zon_solat", "waktu_solat"] as const;
 const PELAYAN = [
   { key: "malaysia", port: 4210, nama: "malaysia", alat: ALAT_MALAYSIA },
   { key: "memori", port: 4211, nama: "memori", alat: ALAT_MEMORI },
+  { key: "cuaca", port: 4212, nama: "cuaca", alat: ALAT_CUACA },
+  { key: "tukaran", port: 4213, nama: "tukaran", alat: ALAT_TUKARAN },
+  { key: "solat", port: 4214, nama: "solat", alat: ALAT_SOLAT },
 ] as const;
+/** Hanya malaysia yang wajib: ia pelayan data utama pakej ini. Yang lain lembut. */
+const WAJIB = new Set(["malaysia"]);
 
 async function api(
   path: string,
@@ -94,7 +108,7 @@ async function main(): Promise<void> {
         (p.key === "memori"
           ? "But memulakannya di port 4211 (semak log but / DATABASE_URL)."
           : "Mulakan dulu: bun examples/malaysia/mcp/server.ts");
-      if (p.key === "memori") {
+      if (!WAJIB.has(p.key)) {
         console.error(`[1/3] AMARAN: ${pesan}`);
         continue;
       }
@@ -119,11 +133,11 @@ async function main(): Promise<void> {
           ? `[2/3] Pelayan ${p.key} ditambah dan ${p.alat.length} alat disasarkan.`
           : `[2/3] Pelayan ${p.key} sudah sedia (dilepaskan) - ${p.alat.length} alat disasarkan.`,
       );
-    } else if (p.key === "memori") {
-      // Katalog tanpa entri "memori" (versi lama) bukan halangan untuk malaysia.
+    } else if (!WAJIB.has(p.key)) {
+      // Katalog tanpa entri pelayan lembut (versi lama) bukan halangan untuk malaysia.
       console.error(
         rawak(
-          `[2/3] AMARAN: gagal tambah pelayan memori (HTTP ${tambah.status})`,
+          `[2/3] AMARAN: gagal tambah pelayan ${p.key} (HTTP ${tambah.status})`,
           tambah.body,
         ),
       );

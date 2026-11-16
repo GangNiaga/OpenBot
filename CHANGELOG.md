@@ -426,6 +426,20 @@ every deployment:
   Penang ferry and more). An administrator enabling either sees its tools in Apps and grants
   them to Bots as usual; every tool is classified read-only except CoinGecko's send_feedback,
   which counts as a write.
+- **The Malaysia package adds three keyless servers: weather, currency and prayer times.**
+  `cuaca` serves weather (current and 1-7 day forecasts for Malaysian and world cities, WMO
+  weather codes rendered in Bahasa Melayu) from Open-Meteo; `tukaran` serves daily exchange
+  rates across ~160 currencies (MYR included, rate lookups and conversions, dated as daily
+  rather than real-time) from the free exchangerate-api snapshot; `solat` serves the official
+  JAKIM prayer times for every district zone for the current month (zone lookup by state,
+  Hijri dates) through the keyless api.waktusolat.app mirror. All three are local first-party
+  servers in the same stateless StreamableHTTP shape as malaysia and memori (loopback ports
+  4212-4214, every tool read-only), launched by `scripts/start-cloud.sh`, registered and
+  granted to every Bot by `examples/malaysia/bootstrap.ts` with soft degradation - one server
+  failing at boot does not block the others. The package gains three matching skills
+  (`cuaca-harian`, `kadar-tukaran`, `waktu-solat`) whose instructions carry the sourcing rules:
+  official weather warnings belong to MetMalaysia, financial decisions to BNM, and the monthly
+  official schedule to e-solat JAKIM.
 - The Bots page lists the Bots you can use first and leaves out empty sections. Bots, Routines,
   Connections and group conversations draw their rows' shape while they load, and a group
   conversation that fails to load offers Retry. Needs you says which part didn't load, with Retry,

@@ -2,9 +2,12 @@
 # Mula stack OpenBot lengkap dalam satu bekas awan (Render):
 #   1. Pelayan MCP Malaysia (port 4210) - carta organisasi & data Malaysia
 #   2. Pelayan MCP Memori (port 4211) - memori jangka panjang pgvector di Supabase
-#   3. Mock Intelligence (port 19100 awan, 19099 laluan setempat) - ganti CopilotKit Intelligence untuk deployment ini
-#   4. Pelayan OpenBot (port $PORT) - API + WebSocket AG-UI (foreground)
-# Selepas pelayan siap, bootstrap daftar MCP Malaysia + Memori dan beri geran alat kepada semua Bot.
+#   3. Pelayan MCP Cuaca (port 4212) - cuaca semasa + ramalan (Open-Meteo, tanpa kunci)
+#   4. Pelayan MCP Tukaran (port 4213) - kadar tukaran matawang (exchangerate-api, tanpa kunci)
+#   5. Pelayan MCP Solat (port 4214) - waktu solat JAKIM bulan semasa (tanpa kunci)
+#   6. Mock Intelligence (port 19100 awan, 19099 laluan setempat) - ganti CopilotKit Intelligence untuk deployment ini
+#   7. Pelayan OpenBot (port $PORT) - API + WebSocket AG-UI (foreground)
+# Selepas pelayan siap, bootstrap daftar kelima-lima pelayan MCP Malaysia dan beri geran alat kepada semua Bot.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
@@ -17,7 +20,7 @@ cd "$(dirname "$0")/.."
 # `pkill` tiada dalam imej (procps tidak dipasang), jadi imbas /proc terus: baca cmdline setiap
 # proses, padankan corak, bunuh PID-nya. Corak tidak akan padankan skrip ini sendiri
 # (/bin/bash scripts/start-cloud.sh) atau ibu bapanya.
-for pattern in "examples/malaysia/mcp/server.ts" "examples/malaysia/memori/server.ts" "examples/malaysia/intelligence-mock.ts" "worker/src/index.ts" "src/index.ts"; do
+for pattern in "examples/malaysia/mcp/server.ts" "examples/malaysia/memori/server.ts" "examples/malaysia/cuaca/server.ts" "examples/malaysia/tukaran/server.ts" "examples/malaysia/solat/server.ts" "examples/malaysia/intelligence-mock.ts" "worker/src/index.ts" "src/index.ts"; do
   for proc in /proc/[0-9]*/cmdline; do
     if tr '\0' ' ' < "$proc" 2>/dev/null | grep -qF "$pattern"; then
       pid="${proc#/proc/}"
@@ -63,6 +66,18 @@ bun examples/malaysia/mcp/server.ts &
 echo "[cloud] mula pelayan MCP Memori di 4211 (pgvector)..."
 bebas_port 4211 "4211"
 bun examples/malaysia/memori/server.ts &
+
+echo "[cloud] mula pelayan MCP Cuaca di 4212 (Open-Meteo)..."
+bebas_port 4212 "4212"
+bun examples/malaysia/cuaca/server.ts &
+
+echo "[cloud] mula pelayan MCP Tukaran di 4213 (exchangerate-api)..."
+bebas_port 4213 "4213"
+bun examples/malaysia/tukaran/server.ts &
+
+echo "[cloud] mula pelayan MCP Solat di 4214 (JAKIM)..."
+bebas_port 4214 "4214"
+bun examples/malaysia/solat/server.ts &
 
 echo "[cloud] mula mock Intelligence di 19100..."
 bebas_port 19100 "19100"

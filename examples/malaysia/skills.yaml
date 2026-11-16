@@ -299,3 +299,60 @@ skills:
       katakan begitu dan tawarkan yang itu. Tulis name, title, role_description dan
       instructions yang pendek, khusus dan boleh diukur, kemudian tawarkan untuk mencipta
       Bot itu dengan save_bot, dan tunggu kelulusan sebelum menyimpan.
+
+  # ============================ CUACA / TUKARAN / SOLAT ============================
+
+  - slug: cuaca-harian
+    title: Cuaca harian Malaysia
+    summary: >-
+      Cuaca semasa dan ramalan harian untuk bandar Malaysia dalam Bahasa Melayu, untuk
+      perancangan acara luar, penghantaran dan perjalanan.
+    instructions: >-
+      Gunakan alat pelayan MCP "cuaca" untuk soalan cuaca. Untuk lokasi yang samar, panggil
+      cuaca/cari_lokasi dahulu dan tunjukkan pilihan kepada pengguna sebelum memilih. Untuk
+      soalan "sekarang", gunakan cuaca/cuaca_semasa; untuk perancangan, gunakan
+      cuaca/ramalan_cuaca dengan bilangan hari yang sesuai (1-7) dan terjemahkan ramalan itu
+      kepada cadangan praktikal (cth. "rabu hujan lebat - tunda penghantaran"). SENTIASA
+      nyatakan bahawa sumbernya Open-Meteo dan bahawa amaran cuaca rasmi (ribut petir,
+      angin kencang, banjir) mesti disemak di MetMalaysia met.gov.my. Jangan sekali-kali
+      mereka angka cuaca daripada ingatan - hanya angka yang alat pulangkan.
+    tools:
+      - cuaca/cuaca_semasa
+      - cuaca/ramalan_cuaca
+      - cuaca/cari_lokasi
+
+  - slug: kadar-tukaran
+    title: Kadar tukaran matawang
+    summary: >-
+      Kadar pertukaran harian dan penukaran matawang (MYR disokong) untuk anggaran kos,
+      bajet perjalanan dan perbandingan harga antara negara.
+    instructions: >-
+      Gunakan alat pelayan MCP "tukaran". Untuk kadar semasa, gunakan
+      tukaran/kadar_semasa; untuk jumlah tertentu, gunakan tukaran/tukar_matawang; jika
+      tidak pasti sesuatu kod matawang wujud, gunakan tukaran/senarai_matawang dahulu.
+      SENTIASA nyatakan bahawa kadar ini harian (exchangerate-api, tarikh kemaskini alat
+      pulangkan) dan bahawa kadar sebenar bank atau penukar wang berbeza kerana yuran dan
+      spread; untuk keputusan kewangan besar, rujuk BNM (bnm.gov.my) atau bank pengguna.
+      Jangan sekali-kali mereka kadar daripada ingatan.
+    tools:
+      - tukaran/kadar_semasa
+      - tukaran/tukar_matawang
+      - tukaran/senarai_matawang
+
+  - slug: waktu-solat
+    title: Waktu solat JAKIM
+    summary: >-
+      Waktu solat rasmi JAKIM untuk semua zon daerah Malaysia (bulan semasa), hari ini
+      atau esok - untuk jadual peribadi, mesyuarat di masjid dan pengurusan hari.
+    instructions: >-
+      Gunakan alat pelayan MCP "solat". Jika pengguna menyebut negeri atau daerah tanpa
+      kod zon, panggil solat/senarai_zon_solat dengan penapis negeri itu dan minta mereka
+      pilih zon yang tepat sebelum memanggil solat/waktu_solat. Default alat ialah hari
+      ini; "esok" diterima melalui parameter hari. SENTIASA nyatakan zon yang digunakan
+      dalam jawapan (cth. "SGR01 - Gombak/Petaling/Shah Alam") kerana zon bersebelahan
+      berbeza beberapa minit, dan bahawa untuk kegunaan rasmi jadual bulanan, rujuk
+      e-solat JAKIM (www.e-solat.gov.my). Alat ini bulan semasa sahaja - jangan anggar
+      waktu untuk bulan lain.
+    tools:
+      - solat/senarai_zon_solat
+      - solat/waktu_solat
