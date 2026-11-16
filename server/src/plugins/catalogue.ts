@@ -792,7 +792,8 @@ export const CATALOGUE: readonly CatalogueEntry[] = Object.freeze([
     summary:
       "Cuaca semasa dan ramalan harian (sehingga 7 hari) untuk bandar Malaysia dan dunia, " +
       "dalam Bahasa Melayu: suhu, rasa sebenar, kelembapan, angin, hujan dan kebarangkalian " +
-      "hujan, dengan geokod nama bandar automatik. Sumber terbuka Open-Meteo, tanpa kunci.",
+      "hujan, dengan geokod nama bandar automatik. Sumber utama Open-Meteo dengan fallback " +
+      "automatik wttr.in, tanpa kunci (opsyen OPENMETEO_API_KEY untuk kuota sendiri).",
     personalSummary:
       "Cuaca anda: semasa dan ramalan harian dalam Bahasa Melayu untuk bandar mana pun.",
     host: "http://127.0.0.1:4212",

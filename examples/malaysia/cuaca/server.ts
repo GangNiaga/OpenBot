@@ -7,8 +7,11 @@
  * kunci: geokod nama bandar kepada koordinat, baca cuaca semasa dan ramalan harian, dan
  * terjemah kod cuaca WMO kepada Bahasa Melayu sebelum dipulangkan kepada Bot.
  *
- * Degradasi jujur: jika Open-Meteo gagal atau had kadar tercapai, alat memulangkan mesej
- * ralat yang jujur - tiada angka cuaca direka-reka.
+ * Degradasi jujur: sumber utama Open-Meteo dengan fallback automatik wttr.in (keyless, kod
+ * WMO sama) apabila Open-Meteo menjawab 429 - IP egress awan dikongsi dan kuota percuma
+ * Open-Meteo dikira per-IP. Set env OPENMETEO_API_KEY (kunci projek percuma dari
+ * open-meteo.com) untuk pindahkan kuota itu kepada akaun sendiri. Jika kedua-dua sumber
+ * gagal, alat memulangkan mesej ralat yang jujur - tiada angka cuaca direka-reka.
  *
  * Alat yang ditawarkan (semuanya baca sahaja, readOnlyHint):
  *  - cari_lokasi     carian nama bandar Malaysia (dan dunia) kepada koordinat
@@ -52,6 +55,36 @@ const WMO_BM: Record<number, string> = {
   95: "Ribut petir ringan atau sederhana",
   96: "Ribut petir dengan hujan batu ringan",
   99: "Ribut petir dengan hujan batu lebat",
+  // Kod lanjutan wttr.in (sekitar 2xx-3xx): sekejap-sekejap (showers) dan ribut petir.
+  200: "Ribut petir dengan hujan",
+  293: "Hujan sekejap ringan",
+  296: "Hujan ringan",
+  299: "Hujan sekejap sederhana",
+  302: "Hujan sederhana",
+  305: "Hujan sekejap lebat",
+  308: "Hujan lebat berterusan",
+  311: "Hujan beku ringan",
+  314: "Hujan beku sederhana",
+  317: "Salji-hujan ringan",
+  320: "Salji-hujan lebat",
+  323: "Salji sekejap ringan",
+  326: "Salji sekejap sederhana",
+  329: "Salji sederhana",
+  332: "Salji lebat",
+  335: "Salji lebat sekejap-sekejap",
+  338: "Salji lebat berterusan",
+  350: "Bebasan hujan beku",
+  353: "Hujan sekejap ringan",
+  356: "Hujan sekejap sederhana",
+  359: "Hujan sekejap lebat",
+  362: "Salji-hujan sekejap ringan",
+  365: "Salji-hujan sekejap lebat",
+  368: "Salji sekejap ringan",
+  371: "Salji sekejap lebat",
+  374: "Bebasan hujan beku ringan",
+  377: "Bebasan hujan beku sederhana",
+  386: "Ribut petir sekejap ringan",
+  389: "Ribut petir sekejap lebat",
 };
 
 function ceritaKod(code: number | undefined): string {
@@ -60,7 +93,13 @@ function ceritaKod(code: number | undefined): string {
 }
 
 async function ambil<T>(url: string): Promise<T> {
-  const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+  // Had kadar Open-Meteo dikira per-IP, dan IP egress awan dikongsi - kunci projek percuma
+  // (OPENMETEO_API_KEY) memindahkan kuota itu kepada akaun sendiri apabila ia diset.
+  const kunci = process.env.OPENMETEO_API_KEY?.trim();
+  const penuh = kunci
+    ? `${url}${url.includes("?") ? "&" : "?"}apikey=${encodeURIComponent(kunci)}`
+    : url;
+  const res = await fetch(penuh, { signal: AbortSignal.timeout(15_000) });
   const body = (await res.json().catch(() => null)) as
     | (T & { error?: boolean; reason?: string })
     | null;
@@ -73,6 +112,82 @@ async function ambil<T>(url: string): Promise<T> {
     );
   }
   return body;
+}
+
+// ---------------------------------------------------------------- Fallback wttr.in
+// Open-Meteo boleh menjawab 429 pada IP egress yang dikongsi; wttr.in (j1, keyless) ialah
+// fallback dengan format WMO code yang sama, supaya penterjemahan BM kekal digunakan.
+type WttrJ1 = {
+  current_condition?: Array<
+    Partial<
+      Record<
+        | "temp_C"
+        | "FeelsLikeC"
+        | "humidity"
+        | "windspeedKmph"
+        | "precipMM"
+        | "weatherCode",
+        string
+      >
+    >
+  >;
+  weather?: Array<{
+    date?: string;
+    mintempC?: string;
+    maxtempC?: string;
+    hourly?: Array<
+      Partial<
+        Record<"time" | "precipMM" | "chanceofrain" | "weatherCode", string>
+      >
+    >;
+  }>;
+};
+
+async function wttr(lokasi: string): Promise<WttrJ1> {
+  const res = await fetch(
+    `https://wttr.in/${encodeURIComponent(lokasi)}?format=j1`,
+    {
+      signal: AbortSignal.timeout(15_000),
+    },
+  );
+  const j = (await res.json().catch(() => null)) as WttrJ1 | null;
+  if (!res.ok || !j?.current_condition?.length) {
+    throw new Error(`wttr.in menjawab ${res.status}`);
+  }
+  return j;
+}
+
+function kumpulHarianWttr(j: WttrJ1): Array<{
+  tarikh: string;
+  kod: number | undefined;
+  min: string | undefined;
+  max: string | undefined;
+  hujan: number;
+  prob: number | undefined;
+}> {
+  return (j.weather ?? []).map((d) => {
+    const jam = d.hourly ?? [];
+    const tengahari =
+      jam.find((h) => h.time === "1200") ?? jam[Math.min(4, jam.length - 1)];
+    const hujan = jam.reduce(
+      (n, h) => n + (Number.parseFloat(h.precipMM ?? "0") || 0),
+      0,
+    );
+    const prob = jam.reduce(
+      (n, h) => Math.max(n, Number.parseInt(h.chanceofrain ?? "0", 10) || 0),
+      0,
+    );
+    return {
+      tarikh: d.date ?? "?",
+      kod: tengahari?.weatherCode
+        ? Number.parseInt(tengahari.weatherCode, 10)
+        : undefined,
+      min: d.mintempC,
+      max: d.maxtempC,
+      hujan: Math.round(hujan * 10) / 10,
+      prob: prob > 0 ? prob : undefined,
+    };
+  });
 }
 
 type Lokasi = {
@@ -191,15 +306,33 @@ function binaCuacaServer(): McpServer {
           "Sumber: Open-Meteo (kemas kini setiap ~15 minit). Untuk amaran cuaca rasmi, rujuk MetMalaysia (met.gov.my).",
         ].join("\n");
         return { content: [{ type: "text" as const, text: teks }] };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Cuaca semasa gagal: ${error instanceof Error ? error.message : "tidak diketahui"}`,
-            },
-          ],
-        };
+      } catch (openMeteoError) {
+        // Fallback wttr.in (keyless): Open-Meteo sering menjawab 429 pada IP egress awan yang dikongsi.
+        try {
+          const w = await wttr(lokasi);
+          const c = w.current_condition?.[0];
+          if (!c) throw new Error("wttr.in tiada bahagian current_condition");
+          const teks = [
+            `Cuaca semasa ${lokasi}:`,
+            `- Keadaan: ${ceritaKod(c.weatherCode ? Number.parseInt(c.weatherCode, 10) : undefined)}`,
+            `- Suhu: ${c.temp_C} °C (rasa sebenar ${c.FeelsLikeC} °C)`,
+            `- Kelembapan: ${c.humidity} %`,
+            `- Angin: ${c.windspeedKmph} km/j`,
+            `- Hujan: ${c.precipMM} mm`,
+            "",
+            "Sumber: wttr.in (fallback - Open-Meteo tidak dapat dihubungi). Untuk amaran cuaca rasmi, rujuk MetMalaysia (met.gov.my).",
+          ].join("\n");
+          return { content: [{ type: "text" as const, text: teks }] };
+        } catch {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `Cuaca semasa gagal: ${openMeteoError instanceof Error ? openMeteoError.message : "tidak diketahui"}; fallback wttr.in juga gagal. Semak nama bandar dan cuba lagi.`,
+              },
+            ],
+          };
+        }
       }
     },
   );
@@ -256,15 +389,35 @@ function binaCuacaServer(): McpServer {
             },
           ],
         };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Ramalan gagal: ${error instanceof Error ? error.message : "tidak diketahui"}`,
-            },
-          ],
-        };
+      } catch (openMeteoError) {
+        // Fallback wttr.in: ramalan 3 hari sahaja (format j1), jujur tentang had itu.
+        try {
+          const w = await wttr(lokasi);
+          const harian = kumpulHarianWttr(w).slice(
+            0,
+            Math.max(1, Math.min(3, hari ?? 3)),
+          );
+          const baris = harian.map(
+            (d) =>
+              `- ${d.tarikh}: ${ceritaKod(d.kod)} | ${d.min}°C hingga ${d.max}°C | hujan ${d.hujan} mm${d.prob ? ` (kebarangkalian ${d.prob} %)` : ""}`,
+          );
+          const teks = [
+            `Ramalan ${harian.length} hari untuk ${lokasi}:`,
+            ...baris,
+            "",
+            "Sumber: wttr.in (fallback - Open-Meteo tidak dapat dihubungi; fallback ini menawarkan 3 hari sahaja). Amaran ribut/limau rasmi datang dari MetMalaysia - rujuk met.gov.my.",
+          ].join("\n");
+          return { content: [{ type: "text" as const, text: teks }] };
+        } catch {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `Ramalan gagal: ${openMeteoError instanceof Error ? openMeteoError.message : "tidak diketahui"}; fallback wttr.in juga gagal. Semak nama bandar dan cuba lagi.`,
+              },
+            ],
+          };
+        }
       }
     },
   );
