@@ -25,7 +25,8 @@ import { z } from "zod";
 
 const PORT = Number.parseInt(process.env.CUACA_MCP_PORT ?? "4212", 10);
 
-/** Kod cuaca WMO (weather_code) kepada penerangan Bahasa Melayu. Kod tiada dalam senarai ini dipulangkan mentah. */
+/** Kod cuaca WMO (weather_code) kepada penerangan Bahasa Melayu. Kod tiada dalam senarai ini dipulangkan mentah.
+ *  Kedua-dua skema disokong: WMO piawai (0-99) dan skema wttr.in sendiri (113-389) untuk fallback. */
 const WMO_BM: Record<number, string> = {
   0: "Langit cerah",
   1: "Amat cerah",
@@ -55,6 +56,24 @@ const WMO_BM: Record<number, string> = {
   95: "Ribut petir ringan atau sederhana",
   96: "Ribut petir dengan hujan batu ringan",
   99: "Ribut petir dengan hujan batu lebat",
+  // Skema wttr.in sendiri (1xx-2xx) untuk jawapan fallback.
+  113: "Langit cerah",
+  116: "Sebahagian berawan",
+  119: "Berawan",
+  122: "Berawan penuh",
+  143: "Kabut",
+  176: "Hujan renying sekejap",
+  179: "Salji sekejap",
+  182: "Salji-hujan sekejap",
+  185: "Bebasan hujan beku sekejap",
+  227: "Salji ditiup",
+  230: "Ribut salji",
+  248: "Berkabus",
+  260: "Berkabus beku",
+  263: "Gerimis sekejap ringan",
+  266: "Gerimis ringan",
+  281: "Gerimis beku",
+  284: "Gerimis beku lebat",
   // Kod lanjutan wttr.in (sekitar 2xx-3xx): sekejap-sekejap (showers) dan ribut petir.
   200: "Ribut petir dengan hujan",
   293: "Hujan sekejap ringan",
