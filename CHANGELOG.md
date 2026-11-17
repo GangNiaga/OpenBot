@@ -8,15 +8,18 @@ Newest first. `Unreleased` is what is on `main` and not yet tagged.
 
 ## Unreleased
 
-**Before upgrading.** Two migrations run at start, and the database moves from
-`0088_approval_reviewer_guidance` to `0090_routine_goal_linked_by_run`. `0089_goal_ends_when_met`
+**Before upgrading.** Three migrations run at start, and the database moves from
+`0088_approval_reviewer_guidance` to `0091_brave_doctor_spectrum`. `0089_goal_ends_when_met`
 adds an `ends_when_met` column to `responsibilities`, false on every existing goal, so existing
 goals behave as before. `0090_routine_goal_linked_by_run` adds a `goal_linked_by_run` column to
 `routines`, false on every existing routine, so a routine that already records a goal is read as
 made for that goal. Linking a broad routine to a goal one of its firings ran is new in this release,
 so a deployment upgrading from a tagged release has no such routine; one running `main` since that
 change has its broad routines read as made for their goal too, so completing that goal switches
-them off, and deleting it deletes them, rather than unlinking them. No existing row is rewritten
+them off, and deleting it deletes them, rather than unlinking them. `0091_brave_doctor_spectrum`
+adds `changed_tools` to `mcp_servers` and `content_hash` to `mcp_tools`, both nullable and
+written only from the next listing refresh, so existing rows read as "nothing changed" exactly
+as before (below, Rug-pull detection). No existing row is rewritten
 and nothing is dropped. Upgrading from 1.0.0 or 0.3.x also runs the migrations listed under 1.0.1. A database that has run them does not go back: restore the backup taken before
 the upgrade instead. Three things change for an existing OpenBot Desktop installation, and one for
 every deployment:
@@ -31,6 +34,50 @@ every deployment:
   the bundled CLI to `copilotkit@7ba85b5` (below).
 - Settings and Admin are grouped differently and several pages have new names (below). Old
   addresses and bookmarks open the new pages.
+
+### Skills and plugins
+
+- **Fifteen specialist skills arrive from the Agency Agents roster, and ten Bots are given them.**
+  The Malaysia package ships fifteen condensed instructions distilled from
+  [Agency Agents](https://github.com/msitarzewski/agency-agents) (MIT): six marketing
+  (media sosial, TikTok, livestream commerce, e-dagang sempadan, SEO, XiaoHongShu), three sales
+  (tawaran & penjanaan prospek, outbound, pipeline), three finance (pembukuan, analisis kewangan,
+  cukai), one product (penyintesis maklum balas) and two support (sokongan pelanggan, khidmat
+  pelanggan). Each one has a matching `war-pack/skills/<slug>/SKILL.md` in the open
+  agentskills.io format and carries the source attribution; the roster keeps its MIT license, and
+  the condensation keeps it too. `pegawai-pemasaran` gets the six marketing skills, `pegawai-kewangan`
+  the three finance ones, `pegawai-operasi` product feedback and both support skills, `ejen-prospek`
+  and `ejen-crm` the sales pair, and the F&B agents pick up the ones their work names — see
+  `agents.yaml`. A skill is an instruction, not a capability, so these change what the Bots ask
+  for, never what they may call.
+- **A refresh now names the actions whose words moved.** Rug-pull detection (below).
+- See `docs/research-skill-plugin-mcp-connector.md` for what the research behind this release
+  found, and what was deliberately left as ranked backlog.
+
+### MCP servers
+
+- **Rug-pull detection.** An MCP server can redefine what an approved tool takes and does between
+  refreshes while keeping its name, and the refresh that replaces the rows was the only moment the
+  drift existed — with nothing recording it. Every stored action now carries a digest of what the
+  vendor said about it (`mcp_tools.content_hash`, SHA-256 of the description and input schema), and
+  a refresh that finds the digest moved names the action in `mcp_servers.changed_tools`, beside the
+  green row, the way `skipped_tools` names the ones left out. A null hash — rows listed before the
+  column — and a name the held listing never had are not a change, so the first refresh after
+  upgrading flags nothing and the second is exact.
+- **Context7 joins the catalogue.** Upstash's documentation server, keyless
+  (`https://mcp.context7.com/mcp`): `resolve-library-id` and `get-library-docs` fetch a library's
+  current docs and code examples, so a Bot writing integration code reads the vendor's today
+  rather than the model's training cutoff. Both tools are lookups, so both are reads.
+
+### Connectors
+
+- **The Composio link is rebuilt on the v3 model.** The old API-key consumer path is dead at the
+  vendor (v1 is 410 Gone and the MCP consumer refuses every key with 401), so the deployment now
+  walks the connected-account flow: an auth config was created, and a per-account link generated
+  through `POST /api/v3/connected_accounts/link`. Completing the consent is a one click for the
+  owner; the catalogue entry moves to the meta-tools endpoint afterwards, and the Composio tools
+  come back. The trigger ingress already verifies the v3 webhook signature and rotates its secret.
+
 
 ### OpenBot Desktop
 

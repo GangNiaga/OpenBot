@@ -66,6 +66,7 @@ agents:
       - bilik-perang
       - ringkasan-mesyuarat
       - lukis-carta
+      - agency-pipeline
 
   - id: pegawai-organisasi
     name: Pegawai Organisasi
@@ -289,6 +290,9 @@ agents:
     skills:
       - analisis-data
       - ringkasan-mesyuarat
+      - agency-pembukuan
+      - agency-analisis-kewangan
+      - agency-cukai
 
   - id: pegawai-operasi
     name: Pegawai Operasi
@@ -326,6 +330,9 @@ agents:
       - ringkasan-mesyuarat
       - hari-kelepasan
       - lukis-carta
+      - agency-maklum-balas
+      - agency-sokongan
+      - agency-khidmat-pelanggan
 
   - id: pegawai-pemasaran
     name: Pegawai Pemasaran
@@ -364,6 +371,12 @@ agents:
       - bilik-perang
       - analisis-data
       - terjemah-rasmi
+      - agency-media-sosial
+      - agency-tiktok
+      - agency-livestream
+      - agency-edagang-sempadan
+      - agency-seo
+      - agency-xiaohongshu
 
   # ================================ LAPISAN PAKAR ================================
 
@@ -680,6 +693,8 @@ agents:
       - kos-menu-fnb
       - ringkasan-mesyuarat
       - hari-kelepasan
+      - agency-sokongan
+      - agency-khidmat-pelanggan
 
   - id: ejen-prospek
     name: Ejen Prospek
@@ -719,6 +734,8 @@ agents:
     skills:
       - prospek-fnb
       - terjemah-rasmi
+      - agency-outbound
+      - agency-tawaran-prospek
 
   - id: ejen-pemasaran-ai
     name: Ejen Pemasaran AI
@@ -759,6 +776,8 @@ agents:
     skills:
       - kempen-fnb
       - lukis-carta
+      - agency-tiktok
+      - agency-media-sosial
 
   - id: ejen-kandungan
     name: Ejen Kandungan
@@ -797,6 +816,7 @@ agents:
     skills:
       - kempen-fnb
       - terjemah-rasmi
+      - agency-seo
 
   - id: ejen-emel
     name: Ejen Emel
@@ -875,6 +895,7 @@ agents:
     skills:
       - balasan-ulasan
       - ringkasan-mesyuarat
+      - agency-sokongan
 
   - id: ejen-crm
     name: Ejen CRM
@@ -915,3 +936,5 @@ agents:
     skills:
       - prospek-fnb
       - ringkasan-mesyuarat
+      - agency-tawaran-prospek
+      - agency-sokongan
