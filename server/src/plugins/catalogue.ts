@@ -193,6 +193,16 @@ const EXA_READ_TOOLS = Object.freeze([
 ]);
 
 /**
+ * Context7's own tool names, from its live `tools/list` (verified on this deployment's probes).
+ * Both are lookups — resolve a library name to its Context7 id, then fetch that library's current
+ * documentation — so every tool this server advertises is a read.
+ */
+const CONTEXT7_READ_TOOLS = Object.freeze([
+  "resolve-library-id",
+  "get-library-docs",
+]);
+
+/**
  * The Composio meta-tools that only look things up. Connection waits, skill reads and the two
  * search/schema readers answer questions; every other tool this server advertises creates,
  * executes or changes something — the two executors (`COMPOSIO_MULTI_EXECUTE_TOOL`,
@@ -363,6 +373,31 @@ export const CATALOGUE: readonly CatalogueEntry[] = Object.freeze([
     writeTools: Object.freeze([]),
     readTools: EXA_READ_TOOLS,
     docsUrl: "https://exa.ai/docs/reference/exa-mcp",
+  },
+  {
+    /*
+     * Context7 — Upstash's documentation server. Its one job is answering a question every coding
+     * and integration task asks and that a model's training data cannot be trusted to: what does
+     * this library's CURRENT api look like. `resolve-library-id` turns a package name into a
+     * Context7 id, `get-library-docs` fetches that id's up-to-date docs and code examples, and a
+     * Bot that has it writes against the vendor's today rather than the model's training cutoff.
+     *
+     * Handshake and `tools/list` verified live at `mcp.context7.com/mcp` (serverInfo Context7
+     * 4.x), keyless — an optional Upstash key only raises the rate limit, and this entry takes the
+     * free tier, so `kind: "none"`: there is no credential to hold and nothing to revoke. Both
+     * tools are lookups, so every name is on the read list and the write list is empty.
+     */
+    key: "context7",
+    title: "Context7 Docs",
+    vendor: "Upstash",
+    summary:
+      "Up-to-date library and framework documentation with code examples. Free access without a key.",
+    host: "https://mcp.context7.com",
+    path: "/mcp",
+    auth: { kind: "none" },
+    writeTools: Object.freeze([]),
+    readTools: CONTEXT7_READ_TOOLS,
+    docsUrl: "https://github.com/upstash/context7",
   },
   {
     key: "exa-authenticated",

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { isOpenBotActor } from "@openbot/shared/openbot-actor";
 import { and, eq, sql } from "drizzle-orm";
 import type { ApprovalGate } from "../../approvals/types";
@@ -139,6 +140,12 @@ export type ServerRecord = {
   lastError: string | null;
   /** What the last stored listing left out for its names; a warning, never a failure. */
   skippedTools: string[];
+  /**
+   * The actions whose vendor's own words (description, input schema) moved versus the previous
+   * stored listing, named so a redefinition of an approved tool is seen instead of assumed away.
+   * A warning, never a failure — see `mcpServers.changedTools`.
+   */
+  changedTools: string[];
   addedBy: string | null;
   /**
    * Whether the catalogue entry registers its own OAuth client (RFC 7591) rather than waiting on
@@ -684,6 +691,24 @@ export function storableSchema(
  */
 export const LISTING_REVISION = 1;
 
+/**
+ * One digest of what the vendor said about an action: description and input schema, hashed
+ * together. The comparison across refreshes is what names a redefinition (see
+ * `mcpServers.changedTools`); the fields hashed are the fields the model is OFFERED, so a change
+ * here is exactly the set of changes a model could notice.
+ *
+ * The schema is walked through `JSON.stringify` AFTER {@link storableSchema} normalised it, so the
+ * same listing always hashes the same bytes; two servers serving one answer can never disagree.
+ */
+export function toolContentHash(
+  description: string,
+  inputSchema: Record<string, unknown>,
+): string {
+  return createHash("sha256")
+    .update(`${description}\n${JSON.stringify(inputSchema)}`)
+    .digest("hex");
+}
+
 export function storableTools(
   serverId: string,
   listed: ListedTool[],
@@ -754,6 +779,11 @@ export function storableTools(
       // The server's own read-only label, kept apart from `effect`; see `mcpTools.declaredRead`.
       declaredRead: tool.declaredRead ?? false,
       version: tool.version?.replaceAll(NUL, "") ?? null,
+      // Of the description and schema stored beside it, so a refresh can name what moved.
+      contentHash: toolContentHash(
+        (tool.description ?? "").replaceAll(NUL, ""),
+        storableSchema(tool.inputSchema ?? {}),
+      ),
     });
   }
 
@@ -772,6 +802,7 @@ export type StorableTool = {
   unclassified: boolean;
   declaredRead: boolean;
   version: string | null;
+  contentHash: string;
 };
 
 export function isDeploymentFault(error: unknown): error is Error {

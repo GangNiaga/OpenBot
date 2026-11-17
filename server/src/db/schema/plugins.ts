@@ -168,6 +168,22 @@ export const mcpServers = pgTable(
      */
     skippedTools: text("skipped_tools").array(),
     /**
+     * The actions whose vendor's own words moved on the last stored listing: the description, the
+     * input schema, or both, versus what the previous listing held for the same name. See
+     * {@link mcpTools.contentHash} for the digest the comparison reads.
+     *
+     * A WARNING ABOUT A REFRESH THAT SUCCEEDED, like {@link mcpServers.skippedTools} and for the
+     * same reason: redefined words are not a failure — the listing was honest about what it now
+     * says — but they are the one shape of drift that changes what a grant means after somebody
+     * approved it. The names land here (null when nothing moved) rather than `lastError`, so the
+     * Plugins page can show them beside a green row.
+     *
+     * Null for rows written before this column existed; a replica that predates it writes nothing
+     * here. Removed actions are not this: a withdrawal is a stranded grant, and that already has
+     * its own audit row.
+     */
+    changedTools: text("changed_tools").array(),
+    /**
      * Which reading of a vendor's listing recorded this app's tools: `LISTING_REVISION` in
      * `plugins/plugin-store/model.ts` as of the refresh that stored them, 0 for rows stored before
      * this column existed.
@@ -326,6 +342,22 @@ export const mcpTools = pgTable(
      * than a reason to guess — a guessed version is a call against an action's other behaviour.
      */
     version: text("version"),
+    /**
+     * A digest of what the vendor last said about this action: the description and the input
+     * schema, hashed together at store time.
+     *
+     * WHY A HASH AND NOT THE TEXT. The rows already hold both fields, so the hash adds no
+     * information — it adds a COMPARED ONE. An MCP server can redefine what a tool takes and does
+     * between refreshes without ever changing its name (the rug-pull shape the MCP security
+     * guidance warns about), and a name-stable change sails through a refresh that only replaces
+     * rows. With the digest stored, the next refresh can name every action whose words moved, the
+     * way {@link mcpServers.skippedTools} names the ones left out.
+     *
+     * NULL for rows listed before this column existed, and a null never counts as a change: the
+     * first refresh after this ships would otherwise flag every action in the deployment. From the
+     * second listing on, the comparison is exact.
+     */
+    contentHash: text("content_hash"),
     createdAt: createdAt(),
   },
   (table) => [primaryKey({ columns: [table.serverId, table.name] })],

@@ -1863,6 +1863,43 @@ export function serverMethods(context: StoreContext) {
        * rather than being copied into `lastError`, because a transaction this database would not take
        * is not something the vendor did.
        */
+      /*
+       * WHAT MOVED OUT FROM UNDER A GRANT, named before the listing replaces it.
+       *
+       * CRITERION. A name whose description or input schema differs from the previously stored
+       * listing — compared through `mcpTools.contentHash`, the digest of exactly the fields a model
+       * is offered — is recorded in `changedTools` beside the stored listing. A hash of null on the
+       * held row (a replica from before the column) or a name the held listing never had is not a
+       * change: the first refresh after this ships would otherwise flag every action, and a new
+       * action is an addition rather than a redefinition. Removed names are not here either — a
+       * withdrawal already lands as a stranded-grant audit row further down.
+       *
+       * REASON. The rug-pull shape the MCP security guidance warns about: a server redefines what
+       * an approved tool takes and does, keeps the name, and the refresh that replaces the rows is
+       * the only moment the drift is visible. Without this comparison the redefinition is silent —
+       * the grant still reads by its old name, and the approval somebody clicked still names words
+       * that are no longer the words being served. `changedTools` is a warning beside a green row,
+       * not `lastError`, because the listing was honest about what it now says.
+       */
+      const priorRows = await database
+        .select({ name: mcpTools.name, contentHash: mcpTools.contentHash })
+        .from(mcpTools)
+        .where(eq(mcpTools.serverId, serverId));
+      const priorHashes = new Map(
+        priorRows.map((row) => [row.name, row.contentHash]),
+      );
+      const changedTools = storable
+        .filter((tool) => {
+          const before = priorHashes.get(tool.name);
+          return (
+            before !== null &&
+            before !== undefined &&
+            before !== tool.contentHash
+          );
+        })
+        .map((tool) => tool.name)
+        .sort();
+
       try {
         await database.transaction(async (transaction) => {
           await transaction
@@ -1903,6 +1940,8 @@ export function serverMethods(context: StoreContext) {
           // Cleared: the listing was stored. The names it left out are a warning — see above.
           lastError: null,
           skippedTools: skipped.length > 0 ? skipped : null,
+          // Names whose words moved versus the previous listing; see the comparison above.
+          changedTools: changedTools.length > 0 ? changedTools : null,
           // Recorded by this build's reading of a listing; see `relistOutdatedBrokeredApps`.
           listingRevision: LISTING_REVISION,
           updatedAt: new Date(),
@@ -2230,6 +2269,7 @@ export function serverMethods(context: StoreContext) {
           toolsRefreshedAt: iso(row.toolsRefreshedAt),
           lastError: row.lastError,
           skippedTools: row.skippedTools ?? [],
+          changedTools: row.changedTools ?? [],
           addedBy: row.addedBy,
           dynamicClient:
             entry?.auth.kind === "user-oauth" &&
